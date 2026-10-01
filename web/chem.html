@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الكيمياء — معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/studio.css?v=5.0.0">
+  <style>
+    .stage.col { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: stretch; align-content: flex-start; overflow: auto; gap: 12px; padding: 10px; }
+    #pick { display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 2px; direction: rtl; flex: 1.5 1 480px; max-width: 640px; align-self: flex-start; }
+    #pick.ltr { direction: ltr; }
+    #pick button { border: 1px solid rgba(0,0,0,.14); border-radius: 4px; padding: 0; cursor: pointer; font: 700 11px "Segoe UI", Tahoma, sans-serif; color: #1b2a30; line-height: 1.05; min-width: 0; aspect-ratio: 1 / 1.05; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #pick button small { font-size: 7.5px; font-weight: 400; opacity: .7; }
+    #pick button:hover { outline: 2px solid var(--tq); z-index: 1; }
+    #pick button[aria-pressed="true"] { outline: 3px solid #c2352b; z-index: 2; }
+    #pick .gap { height: 6px; grid-column: 1 / -1; }
+    #preview { display: flex; align-items: center; justify-content: center; min-height: 300px; flex: 1 1 300px; }
+    #preview.wide { flex-basis: 100%; }
+    #preview svg { max-width: 100%; height: auto; }
+    .info { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 13px; }
+    .info b { color: var(--tq-3); font-weight: 700; }
+    .info .ltr { direction: ltr; text-align: end; font-family: "Times New Roman", serif; }
+    .reps { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .reps button, .tgal button { border: 1px solid #cfdcdf; background: #fff; border-radius: 9px; padding: 7px 6px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #2d454c; text-align: start; }
+    .reps button:hover, .tgal button:hover { border-color: var(--tq); }
+    .reps button[aria-pressed="true"], .tgal button[aria-pressed="true"] { background: var(--tq-soft); border-color: var(--tq); color: var(--tq-3); }
+    .tgal { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    textarea.code { min-height: 210px; }
+    .steps-out { padding-inline-start: 20px; margin: 0; }
+    .steps-out li { margin-bottom: 10px; }
+    .steps-out .mx { margin-top: 4px; text-align: center; }
+    #calcView { max-width: 720px; flex: 1 1 100%; font-size: 15px; }
+    #calcView h3 { margin: 4px 0 12px; color: var(--tq-3); font-size: 16px; }
+    .fld { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; font-size: 12.5px; }
+    .fld input { width: 100%; }
+  </style>
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script>/* office.js blanks pages framed outside Office (PDF studio) — load it only when not embedded there */ if (!/[?&]embed=pdf\b/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');</script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+  <script src="js/studio/studio.js?v=5.2.0"></script>
+  <script src="js/chem/balance.js?v=5.0.0"></script>
+  <script src="js/chem/elements.js?v=5.0.0"></script>
+  <script src="js/chem/atom-render.js?v=5.0.0"></script>
+  <script src="js/chem/lab-render.js?v=5.0.0"></script>
+  <script src="js/chem/chemcalc.js?v=5.0.0"></script>
+</head>
+<body class="studio">
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+    </svg>
+    <div class="lt">جارٍ التحميل…</div>
+  </div>
+  <header class="st-bar">
+    <div class="st-title"><span class="ico">⚗</span><span data-t="الكيمياء: الذرة والمختبر والحسابات|Chemistry: atoms, lab, calculations"></span></div>
+    <div class="st-tools"><button type="button" class="tb" id="exportBtn" title="تصدير">⇪</button></div>
+  </header>
+  <nav class="st-tabs" id="tabs">
+    <button type="button" data-tab="atom" aria-pressed="true" data-t="الجدول الدوري والذرة|Periodic table & atom"></button>
+    <button type="button" data-tab="lab" data-t="أدوات المختبر|Lab apparatus"></button>
+    <button type="button" data-tab="calc" data-t="الحسابات الكيميائية|Calculations"></button>
+  </nav>
+  <main class="st-main">
+    <section class="st-canvas">
+      <div class="stage col" id="stage">
+        <div id="pick"></div>
+        <div id="preview"></div>
+        <div id="calcView" hidden><h3 id="calcTitle"></h3><ol class="steps-out" id="calcOut"></ol></div>
+      </div>
+      <div class="st-status" id="status"></div>
+    </section>
+    <aside class="st-side">
+      <!-- atom tab -->
+      <details class="st-sec" open data-for="atom">
+        <summary data-t="العنصر|Element"></summary>
+        <div class="bd">
+          <input class="inp" id="search" style="width:100%" data-ph="اكتب الرمز أو الاسم: Fe، حديد، 26|Symbol, name or Z: Fe, 26">
+          <div class="info" id="info" style="margin-top:8px"></div>
+        </div>
+      </details>
+      <details class="st-sec" open data-for="atom">
+        <summary data-t="التمثيل المُدرج|Representation"></summary>
+        <div class="bd">
+          <div class="reps" id="reps">
+            <button type="button" data-v="element" data-t="بطاقة العنصر|Element card"></button>
+            <button type="button" data-v="bohr" data-t="نموذج بور|Bohr model"></button>
+            <button type="button" data-v="lewis" data-t="رمز لويس (نقطي)|Lewis symbol"></button>
+            <button type="button" data-v="orbital" data-t="مربعات الأوربيتالات|Orbital boxes"></button>
+            <button type="button" data-v="ptable" data-t="الجدول الدوري كاملاً|Whole periodic table"></button>
+            <button type="button" data-v="config" data-t="التوزيع الإلكتروني (معادلة)|Configuration (equation)"></button>
+          </div>
+          <div id="optLewis" class="row" style="margin-top:8px" hidden><span class="lbl" data-t="الأيون|Ion"></span>
+            <select class="inp" id="ion"><option value="" data-t="ذرة متعادلة|Neutral atom"></option><option value="+">+</option><option value="2+">2+</option><option value="3+">3+</option><option value="-">−</option><option value="2-">2−</option><option value="3-">3−</option></select></div>
+          <div id="optShort" class="checks" style="margin-top:8px" hidden><label><input type="checkbox" id="short"><span data-t="بالاختصار بالغاز النبيل [Ne]…|Noble-gas shorthand"></span></label></div>
+          <div id="optTable" class="checks" style="margin-top:8px" hidden>
+            <label><input type="checkbox" id="hlSel" checked><span data-t="تمييز العنصر المختار|Highlight selected"></span></label>
+            <label><input type="checkbox" id="names"><span data-t="الأسماء العربية|Arabic names"></span></label>
+            <label><input type="checkbox" id="ltr"><span data-t="اتجاه لاتيني (المجموعة 1 يساراً)|LTR layout"></span></label>
+            <div class="lbl" style="margin-top:6px" data-t="عناصر إضافية للتمييز|More to highlight"></div>
+            <input class="inp" id="hlMore" dir="ltr" style="width:100%" placeholder="Na, K, Rb">
+          </div>
+        </div>
+      </details>
+      <!-- lab tab -->
+      <details class="st-sec" open data-for="lab" hidden>
+        <summary data-t="قوالب جاهزة|Templates"></summary>
+        <div class="bd"><div class="tgal" id="tgal"></div></div>
+      </details>
+      <details class="st-sec" open data-for="lab" hidden>
+        <summary data-t="الكود (قابل للتعديل)|Code (editable)"></summary>
+        <div class="bd">
+          <div id="labCode"></div>
+          <div class="lbl" style="margin-top:6px" data-t="إضافة أداة:|Add apparatus:"></div>
+          <div class="chips" id="snips"></div>
+          <p class="hint" data-t="الموضع (x,y) بالسنتيمتر وهو منتصف القاعدة. الخيارات: fill مستوى السائل 0–1، color لونه (blue، pink، أحمر…)، ppt راسب، bubbles فقاعات، label تسمية.|Position (x,y) in cm = bottom centre. Options: fill 0–1, color, ppt, bubbles, label."></p>
+        </div>
+      </details>
+      <!-- calc tab -->
+      <details class="st-sec" open data-for="calc" hidden>
+        <summary data-t="نوع المسألة|Problem type"></summary>
+        <div class="bd">
+          <select class="inp" id="ctype" style="width:100%"></select>
+          <div id="cfields" style="margin-top:8px"></div>
+          <div class="row" style="margin-top:6px;gap:6px">
+            <button type="button" class="btn primary" id="cGo" data-t="احسب بالخطوات|Solve"></button>
+          </div>
+          <p class="hint" data-t="الكتل الذرية من الجدول الدوري الحديث (IUPAC). الغاز في الظروف القياسية: 22.4 لتر لكل مول.|Atomic masses: IUPAC. Gas at STP: 22.4 L/mol."></p>
+        </div>
+      </details>
+    </aside>
+  </main>
+  <footer class="st-foot">
+    <span class="size" id="sizeInfo"></span>
+    <div class="foot-btns">
+      <button type="button" class="btn ghost" id="cancelBtn" data-t="إلغاء|Cancel"></button>
+      <button type="button" class="btn primary" id="okBtn" data-t="إدراج|Insert"></button>
+    </div>
+  </footer>
+  <div class="pop" id="exportPop" hidden><div class="menu">
+    <button type="button" data-exp="copy" data-t="نسخ كصورة|Copy image"></button>
+    <button type="button" data-exp="png" data-t="تنزيل PNG|Download PNG"></button>
+    <button type="button" data-exp="svg" data-t="تنزيل SVG|Download SVG"></button>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/studio/chem.js?v=5.3.0"></script>
+  <script src="js/studio/chem-code.js?v=5.3.0"></script>
+</body>
+</html>

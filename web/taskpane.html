@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/home.css?v=5.0.0">
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="js/word/docscan.js?v=5.0.0"></script>
+  <script src="js/word/latexsense.js?v=5.6.0"></script>
+  <script src="js/core/userfonts.js?v=5.7.0"></script>
+  <script src="js/core/eqalign.js?v=5.4.1"></script>
+  <script src="js/word/bridge.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+</head>
+<body>
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+      <path d="M40 58 A26 26 0 0 1 70 38" fill="none" stroke="#9be3dd" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="lt" data-i18n="loading">جارٍ التحميل…</div>
+  </div>
+
+  <div id="home">
+    <div class="decor" aria-hidden="true">
+      <span class="d1"></span><span class="d2"></span><span class="d3"></span><span class="d4"></span><span class="d5"></span>
+    </div>
+    <div class="topline">
+      <button class="lang" id="langBtn" type="button" title="Language / اللغة">EN</button>
+    </div>
+
+    <section class="hero">
+      <div class="wordmark">
+        <span class="wm-text" data-i18n="appName">معادلات عربية</span>
+        <svg class="wm-mark" viewBox="0 0 64 40" aria-hidden="true"><path d="M4 22 L14 18 L22 36 L36 4 L60 4" fill="none" stroke="#0e9f9a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <p class="tagline" data-i18n="tagline">أسهل طريقة لكتابة المعادلات العربية والكيميائية في Word</p>
+      <button class="pill primary" id="mathBtn" type="button"><span class="pi">√</span><span data-i18n="insertMath">إدراج وتحرير معادلة رياضية</span></button>
+      <button class="pill outline" id="chemBtn" type="button"><span class="pi">⚗</span><span data-i18n="insertChem">إدراج وتحرير معادلة كيميائية</span></button>
+    </section>
+
+    <section class="card" id="selCard" hidden>
+      <div class="card-title"><span id="selTitle" data-i18n="selected">المعادلة المحددة</span> <span class="tag" id="selMode"></span></div>
+      <div class="sel-preview" id="selPreview" dir="ltr"></div>
+      <div class="card-actions">
+        <button class="btn primary" id="editBtn" type="button">✎ <span data-i18n="edit">تحرير</span></button>
+        <button class="btn" id="copyTexBtn" type="button" data-i18n="copyLatex">نسخ LaTeX</button>
+        <button class="btn" id="copyPicBtn" type="button">📋 <span data-i18n="copyImage">نسخ كصورة</span></button>
+        <button class="btn" id="oneToTexBtn" type="button" data-i18n="toLatex">إلى LaTeX</button>
+        <button class="btn danger" id="delBtn" type="button" data-i18n="delete">حذف</button>
+      </div>
+    </section>
+    <p class="hint" id="selHint" data-i18n="noSelection">اضغط على أي معادلة في المستند لتحريرها.</p>
+
+    <section class="studios" aria-label="studios">
+      <div class="st-head"><span data-i18n="studios">أدوات متقدمة</span></div>
+      <div class="tiles">
+        <button class="tile" type="button" data-studio="graph">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 34H35M8 36V5" stroke="#3d5560" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M9 30C14 30 15 8 21 8S27 26 34 12" stroke="#0e9f9a" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+          <span data-i18n="stGraph">رسم الدوال</span></button>
+        <button class="tile" type="button" data-studio="geometry">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 33L20 7L34 33Z" fill="#e2f5f3" stroke="#0e9f9a" stroke-width="2.6" stroke-linejoin="round"/><path d="M12 33A7 7 0 0 0 9.4 27" stroke="#c2352b" stroke-width="2" fill="none"/><path d="M13 20l2 1M27 20l-2 1" stroke="#3d5560" stroke-width="2"/></svg>
+          <span data-i18n="stGeometry">الأشكال الهندسية</span></button>
+        <button class="tile" type="button" data-studio="chart">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M6 34H35" stroke="#3d5560" stroke-width="2" stroke-linecap="round"/><rect x="9" y="20" width="6" height="13" rx="1" fill="#0e9f9a"/><rect x="18" y="10" width="6" height="23" rx="1" fill="#0e9f9a"/><rect x="27" y="15" width="6" height="18" rx="1" fill="#e07a00"/></svg>
+          <span data-i18n="stChart">الإحصاء والرسوم البيانية</span></button>
+        <button class="tile" type="button" data-studio="physics">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M4 33H36" stroke="#3d5560" stroke-width="2"/><path d="M5 33L35 14V33Z" fill="#e2f5f3" stroke="#3d5560" stroke-width="1.8" stroke-linejoin="round"/><rect x="17" y="17" width="8" height="6" transform="rotate(-32 21 20)" fill="#c9ece6" stroke="#0e9f9a" stroke-width="1.8"/><path d="M21 21V33" stroke="#c2352b" stroke-width="2.2"/><path d="M18 30l3 4 3-4" fill="#c2352b"/></svg>
+          <span data-i18n="stPhysics">الفيزياء والميكانيكا</span></button>
+        <button class="tile" type="button" data-studio="circuit">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M7 10H33V30H7Z" fill="none" stroke="#3d5560" stroke-width="2"/><rect x="15" y="7" width="10" height="6" fill="#fff" stroke="#0e9f9a" stroke-width="2"/><path d="M3 18H11M5 22H9" stroke="#3d5560" stroke-width="2.4"/><circle cx="33" cy="20" r="5" fill="#fff" stroke="#e07a00" stroke-width="2"/><path d="M30 17l6 6M36 17l-6 6" stroke="#e07a00" stroke-width="1.6"/></svg>
+          <span data-i18n="stCircuit">الدوائر الكهربائية</span></button>
+        <button class="tile" type="button" data-studio="structure">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6L31 12.5V25.5L20 32L9 25.5V12.5Z" fill="none" stroke="#3d5560" stroke-width="2.4" stroke-linejoin="round"/><circle cx="20" cy="19" r="6" fill="none" stroke="#0e9f9a" stroke-width="2"/><path d="M31 12.5L37 9" stroke="#c2352b" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <span data-i18n="stStructure">الصيغ البنائية</span></button>
+        <button class="tile" type="button" data-studio="atom">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M15 6h10M17 6v10L8 32c-1 2 0 3 2 3h20c2 0 3-1 2-3L23 16V6" fill="#fff" stroke="#3d5560" stroke-width="2" stroke-linejoin="round"/><path d="M11.5 27h17L31 32c.5 1 0 1.5-1 1.5H10c-1 0-1.5-.5-1-1.5z" fill="#f7a8c8"/><circle cx="18" cy="23" r="1.6" fill="#0e9f9a"/><circle cx="22.5" cy="20" r="1.2" fill="#0e9f9a"/></svg>
+          <span data-i18n="stChem">الكيمياء: الذرة والمختبر</span></button>
+        <button class="tile" type="button" data-studio="diagram">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="8" width="30" height="24" rx="2" fill="#fff" stroke="#3d5560" stroke-width="2"/><path d="M5 16H35M13 8V32" stroke="#3d5560" stroke-width="1.6"/><path d="M17 28l5-7 5 3 5-8" stroke="#0e9f9a" stroke-width="2.2" fill="none"/></svg>
+          <span data-i18n="stDiagram">جدول التغيرات والمخططات</span></button>
+        <button class="tile" type="button" data-studio="solve">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="7" width="28" height="26" rx="5" fill="#e2f5f3"/><path d="M11 14h10M11 20h14M11 26h8" stroke="#3d5560" stroke-width="2.2" stroke-linecap="round"/><path d="M27 23l3 3 5-7" stroke="#0e9f9a" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span data-i18n="stSolve">حل خطوة بخطوة</span></button>
+        <button class="tile" type="button" id="pdfTile">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 5h15l7 7v23H10z" fill="#fff" stroke="#3d5560" stroke-width="2" stroke-linejoin="round"/><path d="M25 5v7h7" fill="none" stroke="#3d5560" stroke-width="1.8"/><path d="M14 27c4-1 6-6 9-9" stroke="#c2352b" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M14 19h7" stroke="#0e9f9a" stroke-width="2.2" stroke-linecap="round"/></svg>
+          <span data-i18n="stPdf">استوديو PDF — حلول على الكتب</span></button>
+      </div>
+    </section>
+
+    <details class="panel" id="docTools">
+      <summary data-i18n="docTools">أدوات المستند</summary>
+      <div class="panel-body">
+        <button class="btn block" id="convertBtn" type="button" data-i18n="convertDollars">تحويل كل الصيغ المكتوبة ($…$ والرسوم والجداول)</button>
+        <button class="btn block" id="allTexBtn" type="button" data-i18n="allToLatex">إرجاع المعادلات إلى كود LaTeX</button>
+        <button class="btn block" id="refreshBtn" type="button" data-i18n="refreshAll">تطبيق الإعدادات على كل المعادلات</button>
+        <button class="btn block" id="aiGuideBtn" type="button">🤖 <span data-i18n="aiGuide">دليل الصيغة لكل الأدوات (LaTeX)</span></button>
+      </div>
+    </details>
+
+    <details class="panel" id="docIndex">
+      <summary data-i18n="docIndex">فهرس المستند وفحصه</summary>
+      <div class="panel-body">
+        <button class="btn block" id="diScan" type="button">🔎 <span data-i18n="scanDoc">فحص المستند الآن</span></button>
+        <div id="diOut"></div>
+      </div>
+    </details>
+
+    <details class="panel" id="settingsPanel">
+      <summary data-i18n="settings">الإعدادات</summary>
+      <div class="panel-body grid">
+        <label><span data-i18n="openIn">فتح المحرر في</span>
+          <select id="sOpenIn"><option value="dialog" data-i18n="popup">نافذة منبثقة</option><option value="pane" data-i18n="sidePane">اللوحة الجانبية</option></select>
+        </label>
+        <label><span data-i18n="uiLang">لغة الواجهة</span>
+          <select id="sLang"><option value="ar">العربية</option><option value="en">English</option></select>
+        </label>
+        <label><span data-i18n="quality">جودة الصورة الاحتياطية</span>
+          <select id="sDpi"><option value="300">300 dpi</option><option value="600">600 dpi</option><option value="900">900 dpi</option><option value="1200">1200 dpi — أعلى دقة</option></select>
+        </label>
+        <label><span data-i18n="sum">رمز المجموع</span>
+          <select id="sSum"><option value="mirror">∑ معكوس</option><option value="arabic">مجـ</option></select>
+        </label>
+        <label class="wide switch"><input type="checkbox" id="sVector"><span class="knob"></span><span data-i18n="vector">إدراج متّجه SVG — حادّ عند أي تكبير</span></label>
+        <label class="wide switch"><input type="checkbox" id="sFigClear"><span class="knob"></span><span data-i18n="figClear">خلفية شفافة للرسوم (بدون أبيض) — يُطبَّق على الموجود والجديد</span></label>
+        <label class="wide switch"><input type="checkbox" id="sAutoEdit"><span class="knob"></span><span data-i18n="autoEdit">فتح المحرر تلقائياً عند تحديد معادلة</span></label>
+        <fieldset class="names wide">
+          <legend data-i18n="names">تخصيص أسماء الدوال</legend>
+          <div class="names-grid" id="namesGrid"></div>
+          <button class="link" id="resetNames" type="button" data-i18n="reset">استعادة الافتراضي</button>
+        </fieldset>
+      </div>
+    </details>
+
+    <footer class="foot"><span id="envLabel"></span><span class="copy">© معادلات عربية 2026</span></footer>
+  </div>
+
+  <div id="paneEditor" hidden>
+    <iframe id="edFrame" title="editor" allow="clipboard-write"></iframe>
+  </div>
+
+  <div class="busy" id="busy" hidden><span class="spinner"></span><span id="busyText"></span></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/core/vector.js?v=5.4.0"></script>
+  <script src="js/core/look.js?v=5.0.3"></script>
+  <script src="js/home.js?v=5.7.0"></script>
+  <script src="js/core/bgpick.js?v=5.4.0"></script>
+  <script src="js/word/bgpane.js?v=5.7.0"></script>
+  <script src="js/word/convertpreview.js?v=5.7.0"></script>
+  <script src="js/word/docindex.js?v=5.2.0"></script>
+  <script src="js/word/diag.js?v=5.4.0"></script>
+</body>
+</html>

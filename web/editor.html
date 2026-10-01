@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>معادلات عربية — المحرر</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/editor.css?v=5.0.0">
+  <link rel="stylesheet" href="css/editor-flex.css?v=5.4.1">
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script>/* office.js blanks pages framed outside Office (PDF studio) — load it only when not embedded there */ if (!/[?&]embed=pdf\b/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');</script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="vendor/mathlive/mathlive.min.js?v=0.110.0"></script>
+  <script src="js/editor/mathfield-rtl.js?v=5.4.0"></script>
+  <script src="js/editor/toolbar-data.js?v=5.0.0"></script>
+  <script src="js/editor/library-data.js?v=5.0.0"></script>
+  <script src="js/ai-format.js?v=5.0.0"></script>
+  <script src="js/ai-format-full.js?v=5.3.2"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+</head>
+<body class="editor-page">
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+      <path d="M40 58 A26 26 0 0 1 70 38" fill="none" stroke="#9be3dd" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="lt" data-i18n="loading">جارٍ التحميل…</div>
+  </div>
+
+  <div class="ed">
+    <!-- slim bar: mode + input + extras -->
+    <header class="bar">
+      <div class="seg" id="modeSeg" role="tablist">
+        <button type="button" data-mode="math" role="tab"><span class="ico">√</span> <span data-i18n="math">رياضيات</span></button>
+        <button type="button" data-mode="chem" role="tab"><span class="ico">⚗</span> <span data-i18n="chem">كيمياء</span></button>
+      </div>
+      <div class="bar-tools">
+        <div class="seg small" id="inputSeg">
+          <button type="button" data-input="visual" data-i18n="visual">مرئي</button>
+          <button type="button" data-input="latex" data-i18n="latex">LaTeX</button>
+        </div>
+        <div class="seg small" id="displaySeg">
+          <button type="button" data-display="0" data-i18n="inlineEq">داخل السطر</button>
+          <button type="button" data-display="1" data-i18n="display">سطر مستقل</button>
+        </div>
+        <button type="button" class="tool solve" id="solveBtn"><span class="ico">⚡</span><span class="lb">حل خطوة بخطوة</span></button>
+        <button type="button" class="tool" id="numberBtn" data-i18n-title="numberTip">(1)</button>
+        <button type="button" class="tool" id="historyBtn" data-i18n-title="history">⟲</button>
+        <button type="button" class="tool" id="exportBtn" data-i18n-title="export">⇪</button>
+        <span class="sep"></span>
+        <button type="button" class="tool" id="undoBtn" data-i18n-title="undo">↶</button>
+        <button type="button" class="tool" id="redoBtn" data-i18n-title="redo">↷</button>
+      </div>
+    </header>
+
+    <!-- MathType-like toolbar: dark tabs + gradient panel + format cluster -->
+    <div class="tb">
+      <div class="tb-top"><nav class="tb-tabs" id="tbTabs" role="tablist"></nav><button type="button" class="tb-toggle" id="tbToggle" data-i18n-title="toggleToolbar">▴</button></div>
+      <div class="tb-body">
+        <div class="tb-panel" id="tbPanel" role="toolbar"></div>
+        <div class="tb-format">
+          <div class="fr">
+            <button type="button" class="fbtn" id="boldBtn" data-i18n-title="bold"><b>B</b></button>
+            <button type="button" class="fbtn colorA" id="colorBtn" data-i18n-title="color"><span class="a">A</span><span class="bar-c" id="colorSwatch"></span></button>
+            <button type="button" class="fbtn notation" id="notationBtn" data-i18n-title="notation"><span class="n-ar">ع</span><span class="n-sw">⇄</span><span class="n-en">En</span></button>
+            <button type="button" class="fbtn" id="digitsBtn" data-i18n-title="digits">123</button>
+          </div>
+          <div class="fr">
+            <select id="mathFontSel" class="fsel" data-i18n-title="mathFont">
+              <option value="stix2" data-i18n="fontClassic">كلاسيكي (STIX)</option>
+              <option value="newcm" data-i18n="fontLatex">LaTeX (Computer Modern)</option>
+              <option value="fira" data-i18n="fontSans">حديث (Fira Sans)</option>
+            </select>
+          </div>
+          <div class="fr">
+            <select id="arFontSel" class="fsel" data-i18n-title="arFont">
+              <option value="Amiri">أميري</option>
+              <option value="Noto Naskh Arabic">نوتو نسخ</option>
+              <option value="Scheherazade New">شهرزاد</option>
+              <option value="Noto Kufi Arabic">نوتو كوفي</option>
+              <option value="Cairo">القاهرة</option>
+              <option value="Traditional Arabic">Traditional Arabic</option>
+              <option value="Simplified Arabic">Simplified Arabic</option>
+              <option value="Sakkal Majalla">Sakkal Majalla</option>
+              <option value="Times New Roman">Times New Roman</option>
+            </select>
+            <select id="sizeSel" class="fsel size" data-i18n-title="size"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- editing area -->
+    <section class="work">
+      <div class="field-wrap" id="visualWrap">
+        <math-field id="mf" aria-label="equation"></math-field>
+      </div>
+      <div class="field-wrap" id="latexWrap" hidden>
+        <div class="ai-row">
+          <button type="button" class="tool ai" id="aiCopyBtn" data-i18n-title="aiCopyTip">🤖 <span data-i18n="aiCopy">صيغة الذكاء الاصطناعي</span></button>
+          <button type="button" class="tool ai" id="aiPasteBtn" data-i18n-title="aiPasteTip">📋 <span data-i18n="aiPaste">لصق من الذكاء الاصطناعي</span></button>
+        </div>
+        <textarea id="latexInp" dir="ltr" spellcheck="false" data-i18n-ph="latexPlaceholder"></textarea>
+        <div class="layout-row" id="layoutRow" hidden>
+          <span data-i18n="layout">ترتيب المعادلات</span>
+          <div class="seg small" id="layoutSeg">
+            <button type="button" data-layout="stack" data-i18n="stack">تحت بعض</button>
+            <button type="button" data-layout="inline" data-i18n="inline">في نفس السطر</button>
+            <button type="button" data-layout="auto" data-i18n="auto">حسب الأسطر الفارغة</button>
+          </div>
+          <button type="button" class="tool txtb" id="textBoldBtn" data-i18n-title="textBoldTip"><b>B</b>&nbsp;<span data-i18n="textWord">النص</span></button>
+          <span class="hint-mini" data-i18n="textHint"></span>
+        </div>
+      </div>
+      <div class="field-wrap" id="chemWrap" hidden>
+        <textarea id="chemInp" dir="ltr" spellcheck="false" data-i18n-ph="chemPlaceholder"></textarea>
+      </div>
+      <p class="note" id="note" hidden></p>
+    </section>
+
+    <section class="preview-box" id="pvBox">
+      <div class="pv-label"><span data-i18n="preview">المعاينة النهائية</span><span class="pv-colors" id="pvColors"></span>
+        <span class="pv-tools">
+          <button type="button" id="pvZoomOut" data-i18n-title="zoomOut">−</button>
+          <button type="button" id="pvFit" data-i18n-title="fitWidth">↔</button>
+          <button type="button" id="pvZoomIn" data-i18n-title="zoomIn">+</button>
+          <button type="button" id="pvMax" data-i18n-title="expand">⤢</button>
+        </span></div>
+      <div class="pv-scroll" id="pvScroll"><div class="pv" id="pv" dir="ltr"><span class="pv-empty" data-i18n="emptyPreview">ستظهر المعادلة هنا</span></div></div>
+      <p class="err" id="err" hidden></p>
+    </section>
+
+    <footer class="ed-foot">
+      <label class="switch"><input type="checkbox" id="saveDefault"><span class="knob"></span><span data-i18n="saveDefault">استخدام هذا الخط والحجم افتراضياً</span></label>
+      <div class="foot-btns">
+        <button type="button" class="btn ghost" id="copyImgBtn" title="نسخ المعاينة النهائية كصورة لتلصقها في أي تطبيق (Ctrl+Shift+C)">📋 <span data-i18n="copyImage">نسخ كصورة</span></button>
+        <button type="button" class="btn ghost" id="cancelBtn" data-i18n="cancel">إلغاء</button>
+        <button type="button" class="btn primary" id="okBtn" data-i18n="insert">إدراج</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- popups -->
+  <div class="pop" id="matrixPop" hidden>
+    <div class="pop-title"><span data-i18n="rows">الصفوف</span> × <span data-i18n="cols">الأعمدة</span>: <b id="mSize">1 × 1</b></div>
+    <div class="mgrid" id="mGrid"></div>
+    <div class="pop-row"><span data-i18n="brackets">الأقواس</span>
+      <div class="seg small" id="mBr">
+        <button type="button" data-br="pmatrix">( )</button>
+        <button type="button" data-br="bmatrix">[ ]</button>
+        <button type="button" data-br="vmatrix">| |</button>
+        <button type="button" data-br="Vmatrix">‖ ‖</button>
+        <button type="button" data-br="Bmatrix">{ }</button>
+        <button type="button" data-br="matrix" data-i18n="none">بدون</button>
+      </div>
+    </div>
+  </div>
+  <div class="pop wide" id="ptPop" hidden>
+    <div class="pop-title"><span data-i18n="periodic">الجدول الدوري</span> <b id="ptName"></b></div>
+    <div class="ptable" id="ptGrid"></div>
+  </div>
+  <div class="pop" id="colorPop" hidden>
+    <div class="c-sec" id="cSelSec"><div class="c-title" data-i18n="colorSelection">لون الجزء المحدد</div><div class="swatches" data-target="sel"></div></div>
+    <div class="c-sec"><div class="c-title" data-i18n="colorEquation">لون المعادلة</div><div class="swatches" data-target="eq"></div></div>
+    <div class="c-sec"><div class="c-title" data-i18n="colorText">لون النص</div><div class="swatches" data-target="text"></div></div>
+    <p class="c-hint" data-i18n="colorHint"></p>
+  </div>
+  <div class="pop" id="historyPop" hidden>
+    <div class="pop-title" data-i18n="history">آخر المعادلات</div>
+    <div class="hist" id="histList"></div>
+  </div>
+  <div class="pop" id="exportPop" hidden>
+    <div class="pop-title" data-i18n="export">تصدير</div>
+    <div class="menu">
+      <button type="button" data-exp="png" data-i18n="expPng">نسخ كصورة PNG</button>
+      <button type="button" data-exp="pngfile" data-i18n="expPngFile">تنزيل PNG</button>
+      <button type="button" data-exp="svg" data-i18n="expSvg">تنزيل SVG</button>
+      <button type="button" data-exp="latex" data-i18n="expLatex">نسخ كود LaTeX</button>
+      <button type="button" data-exp="mathml" data-i18n="expMathml">نسخ MathML</button>
+    </div>
+  </div>
+
+  <aside class="sheet" id="solverSheet" hidden>
+    <div class="sh-head"><b id="shTitle"></b><button type="button" class="x" id="shClose" aria-label="close">×</button></div>
+    <div class="sh-body" id="shBody"></div>
+    <div class="sh-foot" id="shFoot" hidden></div>
+  </aside>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/core/userfonts.js?v=5.7.0"></script>
+  <script src="js/core/fontselects.js?v=5.4.0"></script>
+  <script src="js/core/eqalign.js?v=5.4.1"></script>
+  <script src="js/editor/editor.js?v=5.7.0"></script>
+  <script src="js/core/bgpick.js?v=5.4.0"></script>
+  <script src="js/editor/editor-extras.js?v=5.7.0"></script>
+  <script src="js/editor/hotkeys.js?v=5.7.0"></script>
+  <script src="js/editor/chem-latex.js?v=5.3.0"></script>
+  <script src="js/chem/balance.js?v=5.0.0"></script>
+  <script src="js/editor/solver.js?v=5.4.1"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ar"><head><meta charset="utf-8"><title>renderer</title>
+<script src="js/core/logger.js?v=5.7.0"></script>
+  <script>
+(function () {
+  var fonts = { stix2: 1, newcm: 1, fira: 1 };
+  var font = (new URLSearchParams(location.search).get('font') || 'stix2');
+  if (!fonts[font]) font = 'stix2';
+  window.__mathFont = font;
+  window.MathJax = {
+    startup: { typeset: false },
+    loader: { paths: { mathjax: 'vendor/mathjax', fonts: 'vendor/fonts' } },
+    output: { font: 'mathjax-' + font },
+    svg: { fontCache: 'none', linebreaks: { inline: false }, displayOverflow: 'overflow' },
+    options: {
+      enableMenu: false, enableEnrichment: false, enableSpeech: false, enableBraille: false,
+      enableExplorer: false, enableComplexity: false,
+      menuOptions: { settings: { enrich: false, speech: false, braille: false, collapsible: false, assistiveMml: false } }
+    }
+  };
+  document.write('<script src="vendor/fonts/mathjax-' + font + '-font/tex-mml-svg-mathjax-' + font + '.js?v=5.0.0"><\/script>');
+})();
+</script>
+<script src="js/core/userfonts.js?v=5.7.0"></script>
+<script src="js/core/engine.js?v=5.7.0"></script>
+<script src="js/core/vector.js?v=5.4.0"></script>
+<script src="js/chem/elements.js?v=5.0.0"></script>
+</head><body style="margin:0"></body></html>

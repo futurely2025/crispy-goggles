@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e9f9a">
+  <link rel="manifest" href="pdf-manifest.json">
+  <link rel="icon" href="icons/icon-32.png">
+  <link rel="apple-touch-icon" href="icons/pdf-192.png">
+  <title>استوديو PDF — معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/studio.css?v=5.0.0">
+  <link rel="stylesheet" href="css/pdf.css?v=5.3.0">
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+  <script src="js/core/vector.js?v=5.4.0"></script>
+  <script src="js/pdf/compose.js?v=5.0.1"></script>
+  <script src="js/pdf/svg2pdf.js?v=5.1.0"></script>
+  <script src="js/pdf/ui.js?v=5.1.0"></script>
+  <script src="js/pdf/decor.js?v=5.1.0"></script>
+  <script src="js/pdf/stamps.js?v=5.1.0"></script>
+  <script src="vendor/pdf-lib/pdf-lib.min.js?v=1.17.1"></script>
+</head>
+<body class="pdfapp">
+  <header class="pbar">
+    <div class="st-title"><span class="ico">⎙</span><span>استوديو PDF</span><span class="fname" id="fname"></span></div>
+    <div class="pgroup">
+      <button class="tb" id="openBtn" title="فتح ملف PDF (Ctrl+O)">📂 فتح</button>
+      <button class="tb" id="exportBtn" title="حفظ نسخة PDF جديدة بالإضافات (Ctrl+S)">⬇ حفظ PDF</button>
+      <button class="tb" id="projBtn" title="ملف المشروع">🗂 المشروع ▾</button>
+      <button class="tb" id="setBtn" title="الإعدادات: الترقيم، العلامة المائية، الخلفيات، العمل بدون إنترنت">⚙ الإعدادات ▾</button>
+      <button class="tb" id="installBtn" title="تثبيت الاستوديو كتطبيق على جهازك" hidden>⤓ تثبيت كتطبيق</button>
+      <span class="sep"></span>
+      <button class="tb" id="undoBtn" title="تراجع (Ctrl+Z)">↶</button>
+      <button class="tb" id="redoBtn" title="إعادة (Ctrl+Y)">↷</button>
+      <span class="sep"></span>
+      <button class="tb" id="zoomOut" title="تصغير">−</button>
+      <button class="tb zoomv" id="zoomVal" title="ملاءمة العرض">100%</button>
+      <button class="tb" id="zoomIn" title="تكبير">+</button>
+      <button class="tb" id="fitW" title="ملاءمة العرض">↔</button>
+      <button class="tb" id="fitP" title="ملاءمة الصفحة كاملة">▯</button>
+      <span class="sep"></span>
+      <button class="tb" id="findBtn" title="بحث في نص الملف (Ctrl+F)">🔍</button>
+      <button class="tb" id="printBtn" title="طباعة (Ctrl+P)">🖨</button>
+      <span class="sep"></span>
+      <button class="tb" id="prevPg" title="الصفحة السابقة">▲</button>
+      <span class="pgnav"><input id="pgInp" type="number" min="1" value="1"> / <span id="pgCount">0</span></span>
+      <button class="tb" id="nextPg" title="الصفحة التالية">▼</button>
+    </div>
+  </header>
+
+  <nav class="tools" id="tools">
+    <button data-tool="select" title="تحديد وتحريك (V)" aria-pressed="true"><i>⬚</i><b>تحديد</b></button>
+    <button data-tool="hand" title="تحريك الصفحة (H)"><i>✋</i><b>يد</b></button>
+    <button data-tool="textsel" title="تحديد نص الكتاب ونسخه (X) — للملفات النصية غير المصوّرة"><i>𝐀</i><b>تحديد نص</b></button>
+    <span class="sep"></span>
+    <button data-tool="text" title="نص (T)"><i>T</i><b>نص</b></button>
+    <button data-tool="pen" title="قلم حر (P)"><i>✎</i><b>قلم</b></button>
+    <button data-tool="hl" title="تظليل (Y)"><i>▬</i><b>تظليل</b></button>
+    <button data-tool="rect" title="مستطيل (R)"><i>▭</i><b>مستطيل</b></button>
+    <button data-tool="ellipse" title="دائرة (O)"><i>◯</i><b>دائرة</b></button>
+    <button data-tool="line" title="خط (L)"><i>╱</i><b>خط</b></button>
+    <button data-tool="arrow" title="سهم (A)"><i>➚</i><b>سهم</b></button>
+    <button data-tool="white" title="تغطية بيضاء — لإخفاء جزء من الصفحة (W)"><i>◻</i><b>تغطية</b></button>
+    <button data-tool="erase" title="حذف كائن (E)"><i>⌫</i><b>ممحاة</b></button>
+    <span class="sep"></span>
+    <button class="act" id="eqBtn" title="معادلة / حل كامل بمحرر المعادلات (M)"><i>√x</i><b>معادلة</b></button>
+    <button class="act" id="figBtn" title="رسم: دوال، أشكال هندسية، إحصاء، فيزياء…"><i>📈</i><b>رسم ▾</b></button>
+    <button class="act" id="imgBtn" title="صورة من الجهاز (أو الصق Ctrl+V)"><i>🖼</i><b>صورة</b></button>
+    <button data-tool="snap" title="لقطة: حدّد جزءاً ليُنسخ صورة (S)"><i>⛶</i><b>لقطة</b></button>
+    <button data-tool="clip" title="قص سؤال: حدّد كل سؤال فيُضاف مرقّماً إلى قائمة «الأسئلة» (Q)"><i>✂</i><b>قص سؤال</b></button>
+    <button class="act" id="stampBtn" title="أختام: ✓ ✗ ممتاز، الدرجة…"><i>🏷</i><b>ختم ▾</b></button>
+    <button data-tool="note" title="ملاحظة لاصقة — تُحفظ تعليقاً في PDF (N)"><i>🗒</i><b>ملاحظة</b></button>
+    <span class="sep"></span>
+    <span class="split"><button class="act" id="addPage" title="صفحة حل بعد الصفحة الحالية (بالقالب المختار)"><i>＋</i><b>صفحة حل</b></button><button class="act mini" id="tplBtn" title="قالب صفحة الحل">▾</button></span>
+    <button class="act" id="pageMenuBtn" title="أدوات الصفحة"><i>▤</i><b>الصفحة ▾</b></button>
+    <span class="sep"></span>
+    <button id="solModeBtn" class="mode" aria-pressed="true" title="وضع الحل: كل ما تضيفه يُعلَّم «حلاً» فيُحذف من نسخة الطالب. أطفئه لإضافة ما يراه الطالب أيضاً"><i>🎓</i><b>وضع الحل</b></button>
+    <button id="previewBtn" class="mode" aria-pressed="false" title="معاينة نسخة الطالب (بدون الحلول)"><i>👁</i><b>نسخة الطالب</b></button>
+  </nav>
+
+  <div class="props" id="props">
+    <label class="pl">اللون</label>
+    <div class="swatches" id="swatches"></div>
+    <input type="color" id="colorInp" title="لون مخصص">
+    <label class="pl" data-for="width">السُّمك</label>
+    <select id="widthInp" data-for="width"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>6</option><option>10</option><option>16</option></select>
+    <label class="pl" data-for="size">حجم الخط</label>
+    <select id="sizeInp" data-for="size"><option>10</option><option>12</option><option>14</option><option selected>16</option><option>18</option><option>20</option><option>24</option><option>28</option><option>36</option></select>
+    <button class="chip" id="boldInp" data-for="size" aria-pressed="false" title="عريض"><b>B</b></button>
+    <select id="alignInp" data-for="size" title="المحاذاة"><option value="right">يمين</option><option value="center">وسط</option><option value="left">يسار</option></select>
+    <select id="bgInp" data-for="size" title="خلفية النص"><option value="none">بلا خلفية</option><option value="#ffffff">خلفية بيضاء</option><option value="#fff9c4">خلفية صفراء</option></select>
+    <label class="pl" data-for="look">الخلفية</label>
+    <select id="lookBgInp" data-for="look" title="خلفية المعادلة أو الرسم"><option value="">كما رُسمت</option><option value="none">شفافة</option><option value="#ffffff">بيضاء (تغطي نص الكتاب)</option><option value="#fff9c4">صفراء</option><option value="#e2f5f3">فيروزية فاتحة</option><option value="custom">باللون المختار ◼</option></select>
+    <button class="chip" id="inkReset" data-for="ink" title="إرجاع لون المعادلة الأصلي">↺ اللون الأصلي</button>
+    <select id="fontInp" data-for="size" title="الخط"><option value="Amiri">أميري</option><option value="Noto Naskh Arabic">نسخ</option><option value="Scheherazade New">شهرزاد</option><option value="Cairo">القاهرة</option><option value="Noto Kufi Arabic">كوفي</option><option value="Times New Roman">Times</option><option value="Arial">Arial</option></select>
+    <button class="chip" id="italInp" data-for="size" aria-pressed="false" title="مائل (للحروف اللاتينية)"><i>I</i></button>
+    <button class="chip" id="underInp" data-for="size" aria-pressed="false" title="تحته خط"><u>U</u></button>
+    <select id="lhInp" data-for="size" title="تباعد الأسطر"><option value="1.2">↕ 1.2</option><option value="1.5">↕ 1.5</option><option value="1.8">↕ 1.8</option><option value="2.2">↕ 2.2</option></select>
+    <select id="listInp" data-for="size" title="قائمة"><option value="">بلا قائمة</option><option value="bullet">• نقاط</option><option value="num">1. ترقيم</option></select>
+    <select id="borderInp" data-for="size" title="إطار"><option value="">بلا إطار</option><option value="#0e9f9a">إطار فيروزي</option><option value="#c2352b">إطار أحمر</option><option value="#1b2a30">إطار أسود</option></select>
+    <button class="chip" id="noteEdit" data-for="note">✎ تحرير الملاحظة</button>
+    <select id="fillInp" data-for="fill" title="التعبئة"><option value="none">بلا تعبئة</option><option value="soft">تعبئة شفافة</option><option value="solid">تعبئة كاملة</option></select>
+    <span class="grow"></span>
+    <span class="selinfo" id="selInfo"></span>
+    <button class="chip" id="solBtn" data-for="arr" aria-pressed="false" title="حل: يُحذف من نسخة الطالب">🎓 حل</button>
+    <button class="chip" id="arrBtn" data-for="arr" title="محاذاة، توزيع، تجميع، ترتيب">⧉ ترتيب ▾</button>
+    <button class="chip" id="lockBtn" data-for="arr" title="قفل العنصر حتى لا يتحرك أو يُحذف">🔒 قفل</button>
+    <button class="chip" id="dupBtn" title="تكرار العنصر المحدد (Ctrl+D)">⧉ تكرار</button>
+    <button class="chip" id="copyImgBtn" title="نسخ العنصر المحدد كصورة">📋 نسخ صورة</button>
+    <button class="chip danger" id="delBtn" title="حذف (Delete)">🗑 حذف</button>
+  </div>
+
+  <main class="pmain">
+    <aside class="side" id="side">
+      <div class="stabs"><button type="button" data-st="pages" aria-pressed="true">الصفحات</button><button type="button" data-st="clips" aria-pressed="false">الأسئلة <span class="cnt" id="clipCount"></span></button></div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="clips" id="clipsPanel" hidden></div>
+    </aside>
+    <section class="viewer" id="viewer">
+      <div class="empty" id="empty">
+        <div class="drop">
+          <div class="big">⎙</div>
+          <h2>افتح كتاباً أو امتحاناً بصيغة PDF</h2>
+          <p>اسحب الملف إلى هنا أو <button class="btn primary" id="openBtn2">اختر ملف PDF</button></p>
+          <ul>
+            <li>اكتب وارسم وظلّل فوق الصفحات، وأضف معادلات ورسوماً بمحرر الإضافة.</li>
+            <li>أضف صفحة حل (مسطّرة، مربعات، محاور…) بعد أي صفحة، وادمج ملفات PDF ورتّب الصفحات بالسحب.</li>
+            <li>«قص سؤال» يجمع أسئلة الامتحان في قائمة مرقّمة تنسخها لتطبيق راجع واحداً واحداً أو تنزّلها كلها.</li>
+            <li>احفظ نسختين: للمعلم بالحلول، وللطالب بدونها.</li>
+            <li>«لقطة» تقص أي جزء وتنسخه صورة لتلصقه في تطبيقك مباشرة.</li>
+            <li>يُحفظ عملك تلقائياً لكل ملف، و«حفظ PDF» يصنع نسخة جديدة — الأصل لا يتغير.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pages" id="pages"></div>
+    </section>
+  </main>
+  <footer class="pstatus"><span id="status">جاهز</span><span id="saveState"></span></footer>
+
+  <input type="file" id="fileInp" accept="application/pdf,.pdf" hidden>
+  <input type="file" id="imgInp" accept="image/*" hidden>
+  <input type="file" id="projInp" accept=".json,application/json" hidden>
+  <input type="file" id="mergeInp" accept="application/pdf,.pdf" hidden>
+  <input type="file" id="wmInp" accept="image/png,image/jpeg" hidden>
+
+  <div class="pop" id="figPop" hidden><div class="menu">
+    <button data-fig="graph">📈 رسم الدوال</button>
+    <button data-fig="geometry">📐 الأشكال الهندسية</button>
+    <button data-fig="chart">📊 الإحصاء والرسوم البيانية</button>
+    <button data-fig="physics">⚙ الفيزياء والميكانيكا</button>
+    <button data-fig="circuit">⚡ الدوائر الكهربائية</button>
+    <button data-fig="structure">⌬ الصيغ البنائية</button>
+    <button data-fig="diagram">▦ جدول التغيرات والمخططات</button>
+    <button data-fig="chem">⚗ الكيمياء: الذرة والجدول الدوري والمختبر</button>
+  </div></div>
+  <div class="pop" id="pagePop" hidden><div class="menu">
+    <div class="mh" id="pagePopHead">الصفحة</div>
+    <button data-pg="blank">＋ صفحة حل بعد هذه الصفحة</button>
+    <button data-pg="blankBefore">＋ صفحة حل قبل هذه الصفحة</button>
+    <button data-pg="insertFile">📎 إدراج صفحات من ملف PDF آخر (دمج)…</button>
+    <button data-pg="extract">⇪ استخراج إلى ملف PDF جديد…</button>
+    <button data-pg="dup">⧉ تكرار</button>
+    <button data-pg="rot">↻ تدوير 90°</button>
+    <button data-pg="crop">✂ قص حواف الصفحة…</button>
+    <button data-pg="uncrop">↺ إزالة القص</button>
+    <button data-pg="up">▲ نقل للأعلى</button>
+    <button data-pg="down">▼ نقل للأسفل</button>
+    <button data-pg="sol">🎓 تعليمها كصفحة حل</button>
+    <button data-pg="clear">⌫ مسح الإضافات</button>
+    <button data-pg="del" class="danger">🗑 حذف</button>
+    <div class="mh">تحديد الصفحات</div>
+    <button data-pg="selAll">☑ تحديد كل الصفحات</button>
+    <button data-pg="selNone">☐ إلغاء التحديد</button>
+    <div class="mnote">حدّد عدة صفحات من الشريط الجانبي بـ Ctrl + نقر أو Shift + نقر، ثم اختر من هنا. ولترتيب الصفحات اسحبها في الشريط الجانبي.</div>
+  </div></div>
+  <div class="pop" id="tplPop" hidden><div class="menu" id="tplMenu"></div></div>
+  <div class="pop" id="stampPop" hidden><div class="menu stampmenu" id="stampMenu"></div></div>
+  <div class="pop" id="arrPop" hidden><div class="menu arrmenu">
+    <div class="mh">محاذاة (بالنسبة للتحديد، أو للصفحة لعنصر واحد)</div>
+    <div class="agrid">
+      <button data-ar="right" title="يمين">⇥ يمين</button><button data-ar="hcenter" title="وسط أفقي">↔ وسط</button><button data-ar="left" title="يسار">⇤ يسار</button>
+      <button data-ar="top" title="أعلى">⤒ أعلى</button><button data-ar="vcenter" title="وسط عمودي">↕ وسط</button><button data-ar="bottom" title="أسفل">⤓ أسفل</button>
+    </div>
+    <div class="mh">توزيع بالتساوي (3 عناصر فأكثر)</div>
+    <div class="agrid two"><button data-ar="dh">⇹ أفقياً</button><button data-ar="dv">⇵ عمودياً</button></div>
+    <div class="mh">تجميع وترتيب</div>
+    <button data-ar="group">⧉ تجميع (Ctrl+G)</button>
+    <button data-ar="ungroup">⧈ فك التجميع (Ctrl+Shift+G)</button>
+    <button data-ar="front">⬆ إلى الأمام</button>
+    <button data-ar="back">⬇ إلى الخلف</button>
+  </div></div>
+  <div class="pop" id="projPop" hidden><div class="menu">
+    <button data-pj="save">💾 حفظ ملف المشروع (.json)</button>
+    <button data-pj="load">📂 فتح ملف مشروع</button>
+    <button data-pj="reset">↺ البدء من جديد على هذا الملف</button>
+  </div></div>
+  <div class="pop" id="setPop" hidden><div class="menu">
+    <div class="mh">الملف كله</div>
+    <button data-x="num">🔢 ترقيم الصفحات…</button>
+    <button data-x="wm">💧 علامة مائية (نص أو شعار)…</button>
+    <div class="mh">خلفية كل المعادلات والرسوم</div>
+    <button data-fb="none">◻ شفافة للكل (بدون خلفية بيضاء)</button>
+    <button data-fb="#ffffff">⬜ بيضاء للكل (تغطي نص الكتاب تحتها)</button>
+    <button data-fb="">↺ كما رُسمت (الافتراضي)</button>
+    <div class="mh">لون كل المعادلات</div>
+    <button data-ink="pick">🎨 باللون المختار حالياً</button>
+    <button data-ink="">↺ اللون الأصلي</button>
+    <div class="mnote">يُطبَّق على الموجود ويصبح الافتراضي لكل ما تدرجه بعده. ولعنصر واحد: حدّده وغيّر «الخلفية» أو اللون من الشريط.</div>
+    <div class="mh">التطبيق</div>
+    <button data-x="offline">📴 تجهيز للعمل بدون إنترنت</button>
+    <button data-x="keys">⌨ اختصارات لوحة المفاتيح</button>
+    <button data-x="diag">🩺 سجل الأخطاء والفحص الذاتي</button>
+  </div></div>
+  <div class="pop" id="snapPop" hidden><div class="menu">
+    <button data-sn="copy">📋 نسخ الصورة</button>
+    <button data-sn="save">⬇ حفظ PNG</button>
+    <button data-sn="place">⤵ إضافتها إلى الصفحة الحالية</button>
+  </div></div>
+
+  <div class="modal" id="modal" hidden>
+    <div class="mbox"><iframe id="mframe" title="editor" allow="clipboard-write"></iframe></div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+  <div class="busy" id="busy" hidden><span class="spinner"></span><span id="busyText">جارٍ العمل…</span></div>
+
+  <script src="js/core/userfonts.js?v=5.7.0"></script>
+  <script src="js/core/fontselects.js?v=5.4.0"></script>
+  <script type="module">
+    import * as pdfjs from './vendor/pdfjs/pdf.min.js?v=4.10.38';
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL('./vendor/pdfjs/pdf.worker.min.js?v=4.10.38', location.href).href;
+    window.pdfjsLib = pdfjs;
+    window.dispatchEvent(new Event('pdfjs-ready'));
+  </script>
+  <script src="js/pdf/app.js?v=5.7.0"></script>
+  <script src="js/pdf/ext.js?v=5.3.0"></script>
+  <script src="js/pdf/textfind.js?v=5.3.0"></script>
+</body>
+</html>

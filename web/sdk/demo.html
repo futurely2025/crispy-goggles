@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDK معادلات عربية</title>
+<link rel="stylesheet" href="../css/fonts.css?v=5.7.0">
+<link rel="stylesheet" href="../css/brand.css?v=5.0.0">
+<style>
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.8 "Segoe UI", Tahoma, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 28px 16px 60px; }
+  h1 { font: 700 30px Amiri, serif; margin: 0; }
+  h1 span { color: var(--tq); }
+  h2 { font-size: 18px; margin: 30px 0 8px; color: var(--tq-3); }
+  .lead { color: var(--muted); margin: 4px 0 20px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 12px 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  button { border: 0; background: var(--tq); color: #fff; border-radius: 10px; padding: 9px 16px; font: 700 14px "Segoe UI", Tahoma, sans-serif; cursor: pointer; }
+  button.o { background: #fff; color: var(--tq-2); border: 1.5px solid var(--tq); }
+  button:hover { filter: brightness(1.05); }
+  .out { margin-top: 12px; min-height: 60px; border: 1px dashed #b7dcd8; border-radius: 10px; background: var(--tq-softer); padding: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; direction: ltr; }
+  pre { background: #10292b; color: #d9f5f2; padding: 12px 14px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font: 13px/1.6 Consolas, monospace; }
+  code { background: var(--tq-soft); border-radius: 4px; padding: 1px 5px; direction: ltr; unicode-bidi: embed; font-family: Consolas, monospace; font-size: 13px; }
+  .q { font-size: 17px; }
+</style>
+<script src="armath-sdk.js"></script>
+</head>
+<body>
+<main>
+  <h1>معادلات عربية <span>SDK</span></h1>
+  <p class="lead">استخدم محرر المعادلات نفسه داخل تطبيقاتك، مثل كشكول وراجع: لكتابة الأسئلة والحلول، وعرض المعادلات العربية والكيميائية بجودة عالية.</p>
+
+  <h2>١) فتح المحرر والحصول على المعادلة</h2>
+  <div class="card">
+    <div class="row">
+      <button id="b1">فتح محرر الرياضيات</button>
+      <button id="b2" class="o">فتح محرر الكيمياء</button>
+    </div>
+    <div class="out" id="o1">النتيجة تظهر هنا</div>
+    <p id="o1t" style="direction:ltr;text-align:left;font:12px Consolas,monospace;color:#567"></p>
+  </div>
+<pre>&lt;script src="https://wazni.ly/sdk/armath-sdk.js"&gt;&lt;/script&gt;
+ArabicMath.openEditor({ mode: 'math', tex: 'جا^2 س + جتا^2 س = 1' })
+  .then(function (res) {
+    // res.latex, res.svg, res.png (data URL), res.mathml, res.widthPt, res.heightPt
+    document.getElementById('answer').innerHTML = res.svg;
+  });</pre>
+
+  <h2>٢) عرض معادلة بدون فتح المحرر (سؤال في كشكول أو راجع)</h2>
+  <div class="card">
+    <p class="q">أوجد قيمة <span id="q1"></span> إذا كان <span id="q2"></span></p>
+  </div>
+<pre>ArabicMath.render('نها_{س \\to 0} \\frac{جا س}{س}', { fontSize: 16, color: '#0a7c78' })
+  .then(function (r) { el.innerHTML = r.svg; });   // أو r.png لصورة</pre>
+
+  <h2>٣) الرسوم البيانية والأشكال الهندسية والصيغ البنائية</h2>
+  <div class="card">
+    <div class="row">
+      <button id="g1">رسم دالة</button>
+      <button id="g2" class="o">شكل هندسي</button>
+      <button id="g3" class="o">صيغة بنائية</button>
+    </div>
+    <div class="out" id="o2">الرسم يظهر هنا</div>
+  </div>
+<pre>ArabicMath.openGraph({ data: { fns: [{ expr: 'جا س' }], piTicks: true } }).then(function (res) { el.innerHTML = res.svg; /* res.data للتعديل لاحقاً */ });
+ArabicMath.openGeometry({ tpl: 'right' });
+ArabicMath.openStructure({ smiles: 'CC(=O)Oc1ccccc1C(=O)O', name: 'الأسبرين' });</pre>
+
+  <h2>٤) تطبيقات الجوال (Flutter / React Native)</h2>
+  <div class="card">
+    <p>حمّل الرابط <code>https://wazni.ly/editor.html?host=sdk</code> داخل WebView. عند الضغط على «إدراج» تصلك النتيجة JSON فيها <code>latex</code> و<code>svg</code> و<code>png</code>:</p>
+    <ul>
+      <li><b>Flutter</b> (webview_flutter): أضف JavaScriptChannel باسم <code>ArMath</code>.</li>
+      <li><b>React Native</b> (react-native-webview): عبر <code>onMessage</code>.</li>
+    </ul>
+    <p>ولفتح معادلة جاهزة للتعديل أضف في آخر الرابط: <code>#d={"host":"sdk","mode":"math","tex":"..."}</code> بعد ترميزه بـ encodeURIComponent.</p>
+  </div>
+</main>
+<script>
+  function show(res) {
+    document.getElementById('o1').innerHTML = res.svg;
+    document.getElementById('o1t').textContent = res.latex;
+  }
+  document.getElementById('b1').onclick = function () {
+    ArabicMath.openEditor({ mode: 'math' }).then(show).catch(function () {});
+  };
+  document.getElementById('b2').onclick = function () {
+    ArabicMath.openEditor({ mode: 'chem', tex: '2H2 + O2 -> 2H2O' }).then(show).catch(function () {});
+  };
+  function fig(res) { var o = document.getElementById('o2'); o.innerHTML = res.svg; var s = o.querySelector('svg'); if (s) { s.style.maxWidth = '100%'; s.style.height = 'auto'; } }
+  document.getElementById('g1').onclick = function () { ArabicMath.openGraph({ data: { fns: [{ expr: 'س^2 - 4', color: '#0e9f9a' }] } }).then(fig).catch(function () {}); };
+  document.getElementById('g2').onclick = function () { ArabicMath.openGeometry({ tpl: 'right' }).then(fig).catch(function () {}); };
+  document.getElementById('g3').onclick = function () { ArabicMath.openStructure({ smiles: 'CC(=O)Oc1ccccc1C(=O)O', name: 'الأسبرين' }).then(fig).catch(function () {}); };
+  ArabicMath.render('\\operatorname*{نها}_{س \\to 0} \\frac{جا س}{س}', { fontSize: 15, color: '#0a7c78' }).then(function (r) { document.getElementById('q1').innerHTML = r.svg; });
+  ArabicMath.render('د(س) = س^2 - 4س + 3', { fontSize: 15 }).then(function (r) { document.getElementById('q2').innerHTML = r.svg; });
+</script>
+</body>
+</html>

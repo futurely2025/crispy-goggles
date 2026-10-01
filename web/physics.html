@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الفيزياء والميكانيكا — معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/studio.css?v=5.0.0">
+  <style>
+    .tgal { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .tgal button { border: 1px solid #cfdcdf; background: #fff; border-radius: 9px; padding: 7px 6px; cursor: pointer; font-size: 12px; font-weight: 600; color: #2d454c; text-align: start; line-height: 1.35; }
+    .tgal button:hover { border-color: var(--tq); }
+    .tgal button[aria-pressed="true"] { background: var(--tq-soft); border-color: var(--tq); color: var(--tq-3); }
+    .snips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    #params .grid2 label span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    textarea.code { min-height: 230px; }
+  </style>
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script>/* office.js blanks pages framed outside Office (PDF studio) — load it only when not embedded there */ if (!/[?&]embed=pdf\b/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');</script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+  <script src="js/studio/studio.js?v=5.2.0"></script>
+  <script src="js/studio/physics-render.js?v=5.0.0"></script>
+  <script src="js/figures/physics-markup.js?v=5.0.0"></script>
+  <script src="js/studio/circuit-render.js?v=5.0.0"></script>
+  <script src="js/math/circuit-calc.js?v=5.0.0"></script>
+</head>
+<body class="studio">
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+    </svg>
+    <div class="lt">جارٍ التحميل…</div>
+  </div>
+  <header class="st-bar">
+    <div class="st-title"><span class="ico">⚙</span><span data-t="الفيزياء والميكانيكا|Physics & mechanics"></span></div>
+    <div class="st-tools"><button type="button" class="tb" id="exportBtn" title="تصدير">⇪</button></div>
+  </header>
+  <nav class="st-tabs" id="tabs">
+    <button type="button" data-tab="physics" aria-pressed="true" data-t="الميكانيكا والضوء والكهرباء الساكنة|Mechanics, optics, electrostatics"></button>
+    <button type="button" data-tab="circuit" data-t="الدوائر الكهربائية|Electric circuits"></button>
+  </nav>
+  <main class="st-main">
+    <section class="st-canvas">
+      <div class="stage" id="stage"></div>
+      <div class="st-status" id="status"></div>
+    </section>
+    <aside class="st-side">
+      <details class="st-sec" open>
+        <summary data-t="نماذج جاهزة|Ready-made diagrams"></summary>
+        <div class="bd"><div class="tgal" id="gallery"></div></div>
+      </details>
+      <details class="st-sec" open id="paramSec">
+        <summary data-t="القيم|Values"></summary>
+        <div class="bd" id="params"></div>
+      </details>
+      <details class="st-sec" open id="calcSec" hidden>
+        <summary data-t="حساب الدائرة بالخطوات|Solve the circuit (steps)"></summary>
+        <div class="bd">
+          <div class="lbl" data-t="توصيل المقاومات (+ توالٍ، || توازٍ):|Network (+ series, || parallel):"></div>
+          <input class="inp" id="ccExpr" dir="auto" style="width:100%" value="م1 + (م2 || م3)">
+          <div class="lbl" style="margin-top:6px" data-t="القيم بالأوم:|Values (Ω):"></div>
+          <input class="inp" id="ccVals" dir="auto" style="width:100%" value="م1=4، م2=6، م3=3">
+          <div class="lbl" style="margin-top:6px" data-t="المصدر (فرق الجهد جـ أو التيار ت):|Source (voltage or current):"></div>
+          <input class="inp" id="ccSrc" dir="auto" style="width:100%" value="جـ=12">
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button type="button" class="btn primary" id="ccGo" data-t="احسب|Solve"></button>
+            <button type="button" class="btn ghost" id="ccIns" data-t="إدراج الخطوات|Insert steps"></button>
+          </div>
+          <ol class="steps-out" id="ccOut" style="margin-top:8px;font-size:13px"></ol>
+        </div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="الكود (LaTeX) — عدّله بحرية|Code (LaTeX) — edit freely"></summary>
+        <div class="bd">
+          <div id="codeBox"></div>
+          <div class="lbl" style="margin-top:8px" data-t="إضافة سريعة:|Quick add:"></div>
+          <div class="snips" id="snips"></div>
+        </div>
+      </details>
+    </aside>
+  </main>
+  <footer class="st-foot">
+    <span class="size" id="sizeInfo"></span>
+    <div class="foot-btns">
+      <button type="button" class="btn ghost" id="cancelBtn" data-t="إلغاء|Cancel"></button>
+      <button type="button" class="btn primary" id="okBtn" data-t="إدراج الرسم|Insert diagram"></button>
+    </div>
+  </footer>
+  <div class="pop" id="exportPop" hidden><div class="menu">
+    <button type="button" data-exp="copy" data-t="نسخ كصورة|Copy image"></button>
+    <button type="button" data-exp="png" data-t="تنزيل PNG|Download PNG"></button>
+    <button type="button" data-exp="svg" data-t="تنزيل SVG|Download SVG"></button>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/studio/physics.js?v=5.0.0"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "استوديو PDF — معادلات عربية",
+  "short_name": "استوديو PDF",
+  "description": "حلول ومعادلات ورسوم على كتب PDF — يعمل بدون إنترنت",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "pdf.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e9eff0",
+  "theme_color": "#0e9f9a",
+  "icons": [
+    { "src": "icons/pdf-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/pdf-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "file_handlers": [
+    { "action": "pdf.html", "accept": { "application/pdf": [".pdf"] } }
+  ]
+}

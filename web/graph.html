@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>رسم الدوال — معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/studio.css?v=5.0.0">
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script>/* office.js blanks pages framed outside Office (PDF studio) — load it only when not embedded there */ if (!/[?&]embed=pdf\b/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');</script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+  <script src="js/studio/studio.js?v=5.2.0"></script>
+  <script src="vendor/nerdamer/all.min.js?v=1.1.13"></script>
+  <script src="js/math/cas.js?v=5.0.0"></script>
+  <script src="js/studio/graph-render.js?v=5.0.0"></script>
+  <script src="js/figures/graph-markup.js?v=5.0.0"></script>
+</head>
+<body class="studio">
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+    </svg>
+    <div class="lt">جارٍ التحميل…</div>
+  </div>
+
+  <header class="st-bar">
+    <div class="st-title"><span class="ico">📈</span><span data-t="رسم الدوال|Function graphs"></span></div>
+    <div class="st-tools">
+      <button type="button" class="tb" id="zoomIn" title="تكبير">＋</button>
+      <button type="button" class="tb" id="zoomOut" title="تصغير">－</button>
+      <button type="button" class="tb" id="fitBtn" data-t="ملاءمة|Fit"></button>
+      <span class="sep"></span>
+      <button type="button" class="tb" id="exportBtn" title="تصدير">⇪</button>
+    </div>
+  </header>
+
+  <main class="st-main">
+    <section class="st-canvas">
+      <div class="stage grab" id="stage"></div>
+      <div class="st-status" id="status"></div>
+    </section>
+
+    <aside class="st-side">
+      <details class="st-sec" open>
+        <summary data-t="الدوال|Functions"></summary>
+        <div class="bd">
+          <div id="fnList"></div>
+          <button type="button" class="addbtn" id="addFn" data-t="+ إضافة دالة|+ Add function"></button>
+          <div class="chips" id="tpl"></div>
+          <p class="hint" data-t="أمثلة: س^2 − 4 ، 2جا س ، هـ^س ، \frac{1}{س} ، |س − 1| — وللخط الرأسي: س = 2|Examples: x^2 - 4, 2\sin x, e^x, \frac{1}{x}, |x - 1| — vertical line: x = 2"></p>
+        </div>
+      </details>
+
+      <details class="st-sec" open>
+        <summary data-t="النقاط المميزة|Key points"></summary>
+        <div class="bd">
+          <div class="checks" id="featChecks"></div>
+          <table class="feat" id="featTable"></table>
+        </div>
+      </details>
+
+      <details class="st-sec">
+        <summary data-t="نافذة الرسم|Window"></summary>
+        <div class="bd">
+          <div class="grid2">
+            <label><span data-t="أصغر س|x min"></span><input class="inp num" id="xmin"></label>
+            <label><span data-t="أكبر س|x max"></span><input class="inp num" id="xmax"></label>
+            <label><span data-t="أصغر ص|y min"></span><input class="inp num" id="ymin"></label>
+            <label><span data-t="أكبر ص|y max"></span><input class="inp num" id="ymax"></label>
+          </div>
+          <div class="checks" style="margin-top:8px">
+            <label><input type="checkbox" id="auto"><span data-t="ملاءمة ص تلقائياً|Auto-fit y"></span></label>
+            <label><input type="checkbox" id="equal"><span data-t="مقياس متساوٍ|Equal scale"></span></label>
+          </div>
+          <p class="hint" data-t="اسحب الرسم لتحريكه، واستخدم عجلة الفأرة للتكبير.|Drag to pan, wheel to zoom."></p>
+        </div>
+      </details>
+
+      <details class="st-sec">
+        <summary data-t="المحاور والشبكة|Axes & grid"></summary>
+        <div class="bd"><div class="checks" id="axisChecks"></div></div>
+      </details>
+
+      <details class="st-sec">
+        <summary data-t="تظليل المساحة|Shaded area"></summary>
+        <div class="bd">
+          <div class="checks"><label><input type="checkbox" id="areaOn"><span data-t="إظهار التظليل|Show"></span></label>
+            <label><input type="checkbox" id="areaVal"><span data-t="كتابة قيمة المساحة|Show value"></span></label></div>
+          <div class="grid2" style="margin-top:6px">
+            <label><span data-t="تحت منحنى|Under"></span><select class="inp" id="areaFn"></select></label>
+            <label><span data-t="وفوق|Above"></span><select class="inp" id="areaFn2"></select></label>
+            <label><span data-t="من س =|from x ="></span><input class="inp num" id="areaA"></label>
+            <label><span data-t="إلى س =|to x ="></span><input class="inp num" id="areaB"></label>
+          </div>
+          <p class="hint" id="areaInfo"></p>
+        </div>
+      </details>
+
+      <details class="st-sec">
+        <summary data-t="نقاط إضافية|Extra points"></summary>
+        <div class="bd">
+          <div id="ptList"></div>
+          <button type="button" class="addbtn" id="addPt" data-t="+ إضافة نقطة|+ Add point"></button>
+        </div>
+      </details>
+
+      <details class="st-sec">
+        <summary data-t="المظهر|Appearance"></summary>
+        <div class="bd">
+          <div class="row"><span class="lbl" data-t="الترميز|Notation"></span>
+            <div class="seg" id="notSeg"><button type="button" data-v="ar">ع س ص</button><button type="button" data-v="en">x y</button></div></div>
+          <div class="row"><span class="lbl" data-t="الأرقام|Digits"></span>
+            <div class="seg" id="digSeg"><button type="button" data-v="eastern">١٢٣</button><button type="button" data-v="western">123</button></div></div>
+          <div class="grid2">
+            <label><span data-t="الخط|Font"></span><select class="inp" id="font">
+              <option value="Amiri">أميري</option><option value="Noto Naskh Arabic">نوتو نسخ</option><option value="Scheherazade New">شهرزاد</option>
+              <option value="Noto Kufi Arabic">نوتو كوفي</option><option value="Cairo">القاهرة</option></select></label>
+            <label><span data-t="حجم الكتابة|Text size"></span><select class="inp" id="fsz"><option>10</option><option>11</option><option>12</option><option>14</option><option>16</option></select></label>
+            <label><span data-t="العرض (px)|Width (px)"></span><input class="inp num" id="W"></label>
+            <label><span data-t="الارتفاع (px)|Height (px)"></span><input class="inp num" id="H"></label>
+          </div>
+          <div class="chips" id="sizeChips"></div>
+          <div class="row" style="margin-top:8px"><input class="inp" id="title" style="flex:1" data-ph="عنوان فوق الرسم (اختياري)|Title (optional)"></div>
+        </div>
+      </details>
+      <details class="st-sec" id="codeSec">
+        <summary data-t="الكود (LaTeX) — للدقة الكاملة|Code (LaTeX) — for full precision"></summary>
+        <div class="bd"><div id="codeBox"></div></div>
+      </details>
+    </aside>
+  </main>
+
+  <footer class="st-foot">
+    <span class="size" id="sizeInfo"></span>
+    <div class="foot-btns">
+      <button type="button" class="btn ghost" id="cancelBtn" data-t="إلغاء|Cancel"></button>
+      <button type="button" class="btn primary" id="okBtn" data-t="إدراج الرسم|Insert graph"></button>
+    </div>
+  </footer>
+
+  <div class="pop" id="exportPop" hidden><div class="menu">
+    <button type="button" data-exp="copy" data-t="نسخ كصورة|Copy image"></button>
+    <button type="button" data-exp="png" data-t="تنزيل PNG|Download PNG"></button>
+    <button type="button" data-exp="svg" data-t="تنزيل SVG|Download SVG"></button>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/core/userfonts.js?v=5.7.0"></script>
+  <script src="js/core/fontselects.js?v=5.4.0"></script>
+  <script src="js/studio/graph.js?v=5.0.0"></script>
+</body>
+</html>

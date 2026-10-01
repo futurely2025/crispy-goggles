@@ -1,0 +1,39 @@
+/* Brand tokens — turquoise */
+:root {
+  --tq: #0e9f9a;          /* primary turquoise */
+  --tq-2: #0a7c78;        /* hover / dark */
+  --tq-3: #075e5b;        /* deep */
+  --tq-soft: #e2f5f3;     /* tint */
+  --tq-softer: #f1fbfa;
+  --sand: #f6e6b4;
+  --mint: #c9ece6;
+  --slate: #3d5560;       /* MathType-like dark tabs */
+  --slate-2: #4f6873;
+  --ink: #1b2a30;
+  --muted: #5f7179;
+  --line: #d6e0e3;
+  --bg: #f3f7f7;
+  --surface: #ffffff;
+  --danger: #c2352b;
+}
+
+/* loading screen: turquoise arc (like MathType's red arc) */
+.loader { position: fixed; inset: 0; z-index: 100; background: #fff; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px; transition: opacity .35s ease; }
+.loader.done { opacity: 0; pointer-events: none; }
+.loader svg.arc { width: 150px; height: 150px; animation: arcspin 1.1s cubic-bezier(.55,.15,.45,.85) infinite; }
+.loader .lt { font: 600 13px "Segoe UI", Tahoma, sans-serif; color: var(--muted); letter-spacing: .2px; }
+@keyframes arcspin { to { transform: rotate(360deg); } }
+
+/* switch (toggle) like MathType footer */
+.switch { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch .knob { width: 38px; height: 22px; border-radius: 999px; background: #56707a; position: relative; transition: background .2s; flex: none; }
+.switch .knob::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.switch input:checked + .knob { background: var(--tq); }
+.switch input:checked + .knob::after { transform: translateX(16px); }
+[dir="rtl"] .switch input:checked + .knob::after { transform: translateX(-16px); }
+.switch input:focus-visible + .knob { outline: 2px solid var(--tq); outline-offset: 2px; }
+
+/* SVG text from MathJax must be laid out left-to-right (the page itself is RTL) */
+svg text { direction: ltr; }

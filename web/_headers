@@ -1,0 +1,6 @@
+/*
+  Cache-Control: no-cache
+/mathjax/*
+  Cache-Control: public, max-age=604800
+/fonts/*
+  Cache-Control: public, max-age=604800

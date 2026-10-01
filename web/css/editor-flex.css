@@ -1,0 +1,79 @@
+/* 5.4 — a flexible, compact editor window (MathType-like): every part shrinks with the dialog, the editing box scrolls
+ * instead of spilling over the preview (large matrices), and the footer buttons are always visible. */
+html, body { height: 100%; overflow: hidden; }
+.ed { height: 100vh; height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+
+/* top bar + toolbar: tighter */
+.bar { flex: none; padding: 6px 8px 4px; gap: 6px; }
+.bar-tools { gap: 4px; }
+.tool { height: 26px; min-width: 28px; }
+.tb { flex: none; margin: 0 8px; }
+.tb-tab { height: 32px; min-width: 46px; }
+.tb-body { padding: 5px; }
+.tb-panel { max-height: 112px; }
+
+/* editing box: takes the free space, scrolls inside when the formula is bigger (matrices, long systems) */
+.work { flex: 3 1 0; min-height: 70px; margin: 8px 8px 0; overflow: hidden; display: flex; flex-direction: column; }
+.field-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+#visualWrap { overflow: auto; }
+math-field { flex: 1 0 auto; min-height: 100%; font-size: 24px; padding: 12px 14px; }
+#latexWrap, #chemWrap { overflow: hidden; }
+textarea { flex: 1 1 auto; min-height: 40px; }
+
+/* preview: shares the rest, can be folded away */
+.preview-box { flex: 2 1 0; min-height: 76px; margin: 6px 8px 0; display: flex; flex-direction: column; }
+.pv-scroll { min-height: 40px; }
+.pv { padding: 8px 12px; }
+.pv-fold { border: 1px solid #c9d7db; background: #fff; border-radius: 6px; min-width: 24px; height: 22px; padding: 0 6px; cursor: pointer; font-size: 11px; line-height: 1; color: #3a5159; }
+.pv-fold:hover { border-color: var(--tq); color: var(--tq-2); }
+body.pv-folded .preview-box { flex: none; min-height: 0; }
+body.pv-folded .pv-scroll, body.pv-folded #err { display: none; }
+body.pv-folded .work { flex-grow: 1; }
+
+/* footer: always on screen */
+.ed-foot { flex: none; margin-top: 6px; padding: 8px 10px; position: sticky; bottom: 0; z-index: 5; gap: 6px; }
+.btn { padding: 7px 16px; min-width: 80px; font-size: 13.5px; }
+.ed-foot .switch { font-size: 12.5px; }
+.toast { bottom: 64px; }
+
+/* narrow dialogs */
+@media (max-width: 760px) {
+  .tool.solve .lb { display: none; }
+  .tool.solve { min-width: 30px; }
+  .seg button { padding: 4px 9px; }
+  .seg.small button { padding: 3px 7px; }
+  .ed-foot .switch span:last-child { font-size: 11.5px; }
+}
+@media (max-width: 620px) {
+  .bar { justify-content: flex-start; }
+  .tb-body { flex-direction: column; }
+  .tb-format { flex-direction: row; flex-wrap: wrap; border-inline-start: 0; border-top: 1px solid #c8d5d9; padding: 5px 0 0; }
+  .tb-panel { max-height: 96px; }
+  math-field { font-size: 21px; }
+  .btn { min-width: 0; padding: 7px 12px; }
+  #copyImgBtn span { display: none; }
+  .ed-foot .switch { flex: 1 1 100%; order: 2; }
+}
+/* short dialogs: smaller toolbar panel, smaller minimums (everything still reachable by scrolling) */
+@media (max-height: 620px) {
+  .tb-panel { max-height: 72px; }
+  .tb-tab { height: 28px; }
+  .tb-tab .tl { display: none; }
+  .work { min-height: 60px; }
+  .preview-box { min-height: 60px; }
+  .ed-foot { padding: 6px 10px; }
+}
+
+/* 5.4.1 — preview rows in normal text flow: text and equations share ONE baseline (a line like «المساحة: $م = πنق²$ حيث …»
+ * no longer has its words sitting lower than the math), text at the size it will have in Word, even spacing */
+.pv { gap: 4px; }
+.pv .row { display: block; line-height: 1.45; max-width: 100%; padding: 2px 0; }
+.pv.rtl .row { direction: rtl; text-align: right; }
+.pv.ltr .row { text-align: left; }
+.pv .row > svg { display: inline; }
+.pv.rtl .row > * + * { margin-right: .4em; }
+.pv.ltr .row > * + * { margin-left: .4em; }
+.pv .row .tx { font-size: .8em; }
+.pv:not(.fit) .row { white-space: nowrap; }
+.pv .num { float: left; margin-inline-start: 1em; line-height: inherit; }
+.pv.ltr .num { float: right; }

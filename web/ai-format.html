@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دليل صيغة الإضافة — معادلات عربية</title>
+<link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+<link rel="stylesheet" href="css/brand.css?v=5.0.0">
+<style>
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.85 "Segoe UI", Tahoma, sans-serif; }
+  main { max-width: 1060px; margin: 0 auto; padding: 26px 16px 70px; }
+  h1 { font: 700 30px Amiri, serif; margin: 0; }
+  h1 span { color: var(--tq); }
+  h2 { font-size: 19px; color: var(--tq-3); margin: 34px 0 6px; display: flex; align-items: center; gap: 10px; }
+  h2 .ic { width: 30px; height: 30px; border-radius: 9px; background: var(--tq); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; }
+  .lead { color: var(--muted); margin: 6px 0 18px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 10px 0; }
+  .toc { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .toc a { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; color: var(--tq-2); text-decoration: none; font-weight: 600; font-size: 13px; }
+  .toc a:hover { border-color: var(--tq); }
+  .steps { margin: 0; padding-inline-start: 22px; }
+  .bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  button { border: 0; background: var(--tq); color: #fff; border-radius: 10px; padding: 7px 14px; font: 700 13.5px "Segoe UI", Tahoma, sans-serif; cursor: pointer; }
+  button.o { background: #fff; color: var(--tq-2); border: 1.5px solid var(--tq); }
+  button.on { background: var(--tq-2); color: #fff; }
+  pre { background: #10292b; color: #dbf6f2; padding: 12px 14px; border-radius: 10px; margin: 0; font: 13px/1.7 Consolas, "Courier New", monospace;
+    white-space: pre-wrap; direction: ltr; text-align: left; unicode-bidi: plaintext; overflow-x: auto; }
+  #prompt { direction: rtl; text-align: right; max-height: 420px; overflow: auto; }
+  .ex { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin: 10px 0; }
+  .ex .t { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: #24363c; }
+  .ex .t button { padding: 4px 12px; font-size: 12.5px; }
+  .ex .pv { background: var(--tq-softer); border: 1px dashed #b7dcd8; border-radius: 10px; min-height: 90px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow: auto; }
+  .ex .pv > svg, .ex .pv .fig > svg { max-width: 100%; height: auto; }
+  .ex .pv .fig { background: #fff; border-radius: 8px; box-shadow: 0 1px 5px rgba(0,0,0,.08); padding: 4px; max-width: 100%; }
+  .ex .pv .tx { align-self: stretch; text-align: right; font-size: 14px; }
+  .ex .pv .eq { direction: ltr; align-self: flex-end; font-size: 20px; max-width: 100%; overflow-x: auto; }
+  .ex .pv .err { color: var(--danger); font-size: 12.5px; }
+  .ex .pv table { border-collapse: collapse; background: #fff; font-size: 14px; }
+  .ex .pv td { border: 1px solid #9fb3b8; padding: 3px 10px; text-align: center; }
+  .ex .pv tr.h td { background: var(--tq-soft); font-weight: 700; }
+  .note { font-size: 13px; color: var(--muted); margin: 4px 0; }
+  details.refbox { background: #fff; border: 1px solid var(--line); border-radius: 14px; margin: 10px 0; overflow: hidden; }
+  details.refbox > summary { cursor: pointer; padding: 10px 14px; font-weight: 700; color: var(--tq-2); }
+  details.refbox table.ref { border-top: 1px solid var(--line); }
+  details.refbox table.ref code.cmd { display: block; direction: ltr; text-align: left; unicode-bidi: plaintext; white-space: pre-wrap; word-break: break-word; background: none; padding: 0; }
+  table.ref tr.grp td { background: var(--tq-softer); font-weight: 700; color: #24363c; }
+  table.ref { width: 100%; border-collapse: collapse; background: #fff; font-size: 13.5px; }
+  table.ref td, table.ref th { border: 1px solid var(--line); padding: 5px 9px; text-align: right; vertical-align: top; }
+  table.ref th { background: var(--tq-soft); }
+  code { direction: ltr; unicode-bidi: embed; font-family: Consolas, monospace; background: var(--tq-soft); padding: 0 5px; border-radius: 4px; font-size: 13px; }
+  textarea { width: 100%; box-sizing: border-box; min-height: 160px; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 13px/1.7 Consolas, monospace; direction: ltr; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #16302f; color: #fff; padding: 8px 14px; border-radius: 9px; z-index: 9; }
+  @media (max-width: 760px) { .ex, .grid { grid-template-columns: 1fr; } }
+</style>
+<script src="js/core/logger.js?v=5.7.0"></script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+<script src="js/core/render-host.js?v=5.7.0"></script>
+<script src="js/studio/raster.js?v=5.4.0"></script>
+<script src="js/figures/util.js?v=5.0.0"></script>
+<script src="js/figures/registry.js?v=5.0.0"></script>
+<script src="js/ai-format.js?v=5.0.0"></script>
+<script src="js/ai-format-full.js?v=5.3.2"></script>
+</head>
+<body>
+<main>
+  <h1>دليل <span>صيغة الإضافة</span></h1>
+  <p class="lead">كل ما تستطيع الإضافة إدراجه في Word — معادلات ونصوص ورسوم بيانية وأشكال هندسية ورسوم فيزيائية ودوائر وجداول وصيغ كيميائية — يُكتب بصيغة LaTeX واحدة.
+    اكتبها بنفسك أو أعطِ التعليمات أدناه للذكاء الاصطناعي، ثم الصق الناتج في وضع <b>LaTeX</b> بالمحرر فيُدرج كله بالترتيب. الأمثلة معروضة كما ستظهر في المستند.</p>
+
+  <div class="toc" id="toc"></div>
+
+  <h2 id="prompt-h"><span class="ic">🤖</span>تعليمات الذكاء الاصطناعي</h2>
+  <div class="card">
+    <ol class="steps">
+      <li>انسخ التعليمات والصقها في بداية المحادثة، أو في «التعليمات المخصصة» أو System Prompt لنموذجك.</li>
+      <li>اطلب ما تريد، مثل: «اكتب درس المستوى المائل مع رسم للقوى ومسألة محلولة» أو «جدول تكراري ومدرج لدرجات 20 طالباً».</li>
+      <li>انسخ الرد، وافتح المحرر ثم وضع <b>LaTeX</b>، واضغط <b>📋 لصق من الذكاء الاصطناعي</b> أو Ctrl+V. يُنظَّف النص تلقائياً وتبقى الرسوم كما هي.</li>
+    </ol>
+    <div class="bar" style="margin-top:10px">
+      <button id="copyP">نسخ التعليمات</button>
+      <button class="o on" id="modeFull" title="كل الأوامر والخيارات لكل الأدوات">كاملة (كل الأوامر)</button>
+      <button class="o" id="modeShort" title="نسخة قصيرة للنماذج ذات الحد الصغير للتعليمات">مختصرة</button>
+      <span style="width:10px"></span>
+      <button class="o on" id="langAr">عربي</button>
+      <button class="o" id="langEn">English</button>
+    </div>
+    <p class="note" id="promptInfo"></p>
+    <pre id="prompt"></pre>
+  </div>
+
+  <div id="sections"></div>
+
+  <h2 id="cleaner-h"><span class="ic">🧹</span>جرّب المنظِّف</h2>
+  <div class="grid">
+    <div><div class="bar"><b>ردّ الذكاء الاصطناعي كما هو</b></div><textarea id="raw"></textarea></div>
+    <div><div class="bar"><b>بعد التنظيف</b> <button class="o" id="copyC">نسخ</button></div><textarea id="cleaned" readonly></textarea></div>
+  </div>
+</main>
+<div class="toast" id="toast" hidden></div>
+<script>
+(function () {
+  var SECTIONS = window.AIFormat && AIFormat.GUIDE ? AIFormat.GUIDE : [
+    { id: 'eq', ic: '√', t: 'المعادلات والنصوص', note: 'سطر % عنوان، وكل معادلة في سطر، والنص مع المعادلة بين $…$. الوحدات بـ \\qty والكيمياء بـ \\ce.', ex: [
+      ['قوانين مع عناوين', '% 1. القانون العام\nس = \\frac{-ب \\pm \\sqrt{ب^2 - 4 أ جـ}}{2 أ}\n% 2. متطابقة\nجا^2 س + جتا^2 س = 1\nمساحة الدائرة: $م = \\pi نق^2$ حيث $نق$ نصف القطر'],
+      ['نظام ونهاية وتكامل', '\\begin{cases} 2س + ص = 5 \\\\ س - ص = 1 \\end{cases}\nنها_{س \\to 0} \\frac{جا س}{س} = 1\n\\int_{0}^{\\pi} جا س \\, ءس = 2'],
+      ['الوحدات والكيمياء', 'ت = \\qty{9.8}{m/s^2}\nق = ك \\times ت = \\qty{19.6}{\\newton}\n\\ce{2H2 + O2 -> 2H2O}']
+    ] },
+    { id: 'graph', ic: '📈', t: 'رسم الدوال', note: 'الخيارات: x=من:إلى، y=من:إلى، pi (تدريج π)، grid، extrema (القيم القصوى)، roots، intersections، digits=eastern، width=12cm. ويُقبل pgfplots أيضاً.', ex: [
+      ['قطع مكافئ', '\\begin{graph}[x=-4:4, y=-5:6]\n  \\plot{س^2 - 4}\n  \\point[label=أ]{(0, -4)}\n\\end{graph}'],
+      ['دالتان ومساحة', '\\begin{graph}[x=-0.5:7, pi]\n  \\plot{جا س}\n  \\plot[color=red, dashed]{جتا س}\n  \\area[of=1, from=0, to=\\pi]\n\\end{graph}'],
+      ['pgfplots', '\\begin{tikzpicture}\n\\begin{axis}[xmin=-3, xmax=3, grid=major]\n  \\addplot[blue, thick, domain=-3:3]{exp(-x^2)};\n\\end{axis}\n\\end{tikzpicture}']
+    ] },
+    { id: 'geo', ic: '📐', t: 'الأشكال الهندسية', note: 'الأطوال بالسنتيمتر (الشكل يُدرج بمقاسه الحقيقي) والزوايا بالدرجات. sides=values لكتابة الأطوال، angles=values للزوايا.', ex: [
+      ['مثلث بأطواله الثلاثة', '\\begin{geometry}[sides=values, angles=values]\n  \\triangle{أ,ب,جـ}[sides=5,6,7]\n\\end{geometry}'],
+      ['مثلث قائم وارتفاع', '\\begin{geometry}[sides=values]\n  \\triangle{أ,ب,جـ}[right=ب, legs=3,4]\n  \\foot{د}{ب}{أ,جـ}\n\\end{geometry}'],
+      ['دائرة ونقاط عليها', '\\begin{geometry}\n  \\circle{م}[radius=2.5]\n  \\point[on=م, angle=30]{أ}\n  \\point[on=م, angle=150]{ب}\n  \\point[on=م, angle=260]{جـ}\n  \\polygon{أ,ب,جـ}\n  \\angle[value]{أ,جـ,ب}\n\\end{geometry}'],
+      ['شبه منحرف', '\\begin{geometry}[sides=values]\n  \\trapezoid{أ,ب,جـ,د}[bottom=6, top=3, height=3]\n\\end{geometry}']
+    ] },
+    { id: 'constr', ic: '⌖', t: 'الإنشاءات والتحويلات الهندسية', note: 'داخل geometry. صور التحويلات تُسمّى أ′ ب′ جـ′ تلقائياً أو بـ names={…}. الخيارات: lines (خطوط الربط)، dashed، color.', ex: [
+      ['الدائرة المارة بالرؤوس والعمود المنصف', '\\begin{geometry}\n  \\triangle{أ,ب,جـ}[sides=5,6,7]\n  \\circumcircle[center=م]{أ,ب,جـ}\n  \\perpbisector{أ,ب}\n\\end{geometry}'],
+      ['مماسان من نقطة خارج الدائرة', '\\begin{geometry}\n  \\circle{م}[radius=2]\n  \\point{ن}{(5,0)}\n  \\tangents[names={ل,ك}]{ن}{م}\n\\end{geometry}'],
+      ['انعكاس حول ضلع', '\\begin{geometry}\n  \\triangle{أ,ب,جـ}[sides=5,6,7]\n  \\reflect[over={أ,ب}]{أ,ب,جـ}\n\\end{geometry}'],
+      ['دوران وتكبير', '\\begin{geometry}\n  \\point{م}{(0,0)}\n  \\point{أ}{(1,0)}\n  \\point{ب}{(3,0)}\n  \\point{جـ}{(1,2)}\n  \\polygon{أ,ب,جـ}\n  \\rotate[center=م, angle=90]{أ,ب,جـ}\n\\end{geometry}']
+    ] },
+    { id: 'stats', ic: '📊', t: 'الإحصاء', note: 'الأنواع: bar hbar line pie donut histogram polygon ogive scatter box. والجداول التكرارية تُدرج جداول Word حقيقية.', ex: [
+      ['أعمدة', '\\begin{chart}[type=bar, title=درجات الطالب, ylabel=الدرجة]\n  \\data{الرياضيات:85, الفيزياء:78, الكيمياء:90}\n\\end{chart}'],
+      ['مدرج ومضلع تكراري', '\\begin{chart}[type=histogram, polygon, xlabel=الدرجات, ylabel=عدد الطلاب]\n  \\classes{10-20:4, 20-30:7, 30-40:12, 40-50:9}\n\\end{chart}'],
+      ['قطاعات دائرية', '\\begin{chart}[type=pie, angles]\n  \\data{كرة القدم:12, السلة:8, السباحة:5}\n\\end{chart}'],
+      ['انتشار وخط انحدار', '\\begin{chart}[type=scatter, regression, xlabel=الساعات, ylabel=الدرجة]\n  \\points{(1,52) (2,58) (3,65) (4,70) (5,79)}\n\\end{chart}'],
+      ['جدول تكراري', '\\freqtable{2:3, 4:5, 6:2}']
+    ] },
+    { id: 'prob', ic: '🔔', t: 'التوزيعات الاحتمالية', note: 'المنحنى الطبيعي بالمساحة المظللة بين from وto (أو z لتوزيع معياري)، وذو الحدين بأعمدة مظللة. والجداول تُدرج جداول Word.', ex: [
+      ['التوزيع الطبيعي', '\\begin{chart}[type=normal, mean=50, sd=10, from=40, to=60]\n\\end{chart}'],
+      ['توزيع ذي الحدين', '\\begin{chart}[type=binomial, n=10, p=0.3, from=2, to=4]\n\\end{chart}'],
+      ['جدول Z', '\\ztable[from=0, to=1]']
+    ] },
+    { id: 'phys', ic: '⚙', t: 'الفيزياء والميكانيكا', note: 'الزاوية بالدرجات: 0 يمين، 90 أعلى، −90 أسفل. dir=normal (عمودي على السطح)، along (مع الميل)، against (عكسه).', ex: [
+      ['جسم على مستوى مائل', '\\begin{physics}\n  \\incline[angle=30, base=6, name=م]{(0,0)}\n  \\block[on=م, at=0.55, name=ج]{ك}\n  \\force[from=ج, angle=-90, len=1.6]{و}\n  \\force[from=ج, dir=normal, len=1.7, color=blue]{ر}\n  \\force[from=ج, dir=along, len=1.3, color=orange]{ح}\n\\end{physics}'],
+      ['مقذوف', '\\begin{physics}\n  \\projectile[v=20, angle=45, marks]{(0,0)}\n\\end{physics}'],
+      ['عدسة محدبة', '\\begin{physics}\n  \\lens[type=convex, f=2, object=5, height=1.2]{(0,0)}\n\\end{physics}']
+    ] },
+    { id: 'motion', ic: '〰', t: 'منحنيات الحركة والموجات', note: 'داخل physics. type=vt (السرعة–الزمن) أو xt (الإزاحة–الزمن) أو at. area تكتب المساحة (الإزاحة) وslopes الميل (التسارع أو السرعة).', ex: [
+      ['السرعة – الزمن', '\\begin{physics}\n  \\motion[type=vt, area, slopes, names={أ,ب,جـ,د}]{(0,0) (2,10) (5,10) (7,0)}\n\\end{physics}'],
+      ['موجة مستعرضة', '\\begin{physics}\n  \\wave[amplitude=1, wavelength=4, length=10]{(0,0)}\n\\end{physics}'],
+      ['موجة طولية', '\\begin{physics}\n  \\wave[amplitude=1, wavelength=3, length=9, type=long]{(0,0)}\n\\end{physics}']
+    ] },
+    { id: 'circ', ic: '⚡', t: 'الدوائر الكهربائية', note: 'كل عنصر بين نقطتين. ويُقبل circuitikz أيضاً.', ex: [
+      ['توالٍ وأميتر', '\\begin{circuit}\n  \\battery[label=ق.د.ك]{(0,0)}{(0,3)}\n  \\resistor[label=م₁]{(0,3)}{(3,3)}\n  \\resistor[label=م₂]{(3,3)}{(6,3)}\n  \\ammeter{(6,3)}{(6,0)}\n  \\switch{(6,0)}{(0,0)}\n\\end{circuit}'],
+      ['circuitikz', '\\begin{circuitikz}\n\\draw (0,0) to[battery1] (0,3) to[R, l=$R_1$] (4,3) to[C] (4,0) -- (0,0);\n\\end{circuitikz}']
+    ] },
+    { id: 'tab', ic: '▦', t: 'جدول التغيرات والإشارة', note: '\\auto يحسب المشتقة والنقاط الحرجة والنهايات تلقائياً. ويُقبل tkz-tab أيضاً.', ex: [
+      ['تلقائي', '\\begin{vartable}\n  \\auto{س^3 - 3س}\n\\end{vartable}'],
+      ['يدوي', '\\begin{vartable}\n  \\x{-\\infty, 0, +\\infty}\n  \\sign[name=د\'(س)]{-, 0, +}\n  \\var[name=د(س)]{+/+\\infty, -/1, +/+\\infty}\n\\end{vartable}'],
+      ['جدول إشارة', '\\begin{signtable}\n  \\x{-\\infty, -2, 3, +\\infty}\n  \\sign[name=س + 2]{-, 0, +, |, +}\n  \\sign[name=س - 3]{-, |, -, 0, +}\n\\end{signtable}']
+    ] },
+    { id: 'diag', ic: '◔', t: 'خط الأعداد وأشكال فن والشجرة', note: 'المتباينات بـ \\solution، والمجموعات بـ ∩ ∪ − \' ، والشجرة سطر لكل فرع.', ex: [
+      ['خط الأعداد', '\\begin{numberline}\n  \\solution{-2 < س \\le 3}\n\\end{numberline}'],
+      ['أشكال فن', '\\begin{venn}[sets={أ,ب}, shade={أ∩ب}]\n  \\region[أ]{1, 2, 3}\n  \\region[أ∩ب]{4}\n  \\region[ب]{5, 6}\n\\end{venn}'],
+      ['شجرة احتمالات', '\\begin{tree}[products]\n- أحمر [0.3]\n  - أحمر [0.2]\n  - أزرق [0.8]\n- أزرق [0.7]\n  - أحمر [0.4]\n  - أزرق [0.6]\n\\end{tree}']
+    ] },
+    { id: 'chem', ic: '⚗', t: 'الكيمياء', note: '\\ce للمعادلات، و\\chemfig أو \\smiles أو \\molecule{الاسم} للصيغ البنائية.', ex: [
+      ['معادلات', '\\ce{CaCO3 ->[\\Delta] CaO + CO2 ^}\n\\ce{N2 + 3H2 <=> 2NH3}'],
+      ['chemfig', '\\chemfig[name=حمض الإيثانويك]{CH_3-C(=[1]O)-[7]OH}'],
+      ['حلقة أروماتية', '\\chemfig[name=الفينول]{*6(-=-(-OH)=-=)}'],
+      ['من المكتبة', '\\molecule{الأسبرين}']
+    ] },
+    { id: 'atom', ic: '⚛', t: 'الذرة والجدول الدوري', note: 'بالرمز أو الاسم العربي. lewis يقبل الأيونات (Na+ و O2-). orbital[short] بالاختصار بالغاز النبيل. ptable[highlight={…}, names, ltr].', ex: [
+      ['بطاقة العنصر ونموذج بور', '\\element{Na}\n\\bohr{Na}'],
+      ['رموز لويس', '\\lewis{Cl}\n\\lewis{O2-}'],
+      ['الأوربيتالات والتوزيع الإلكتروني', '\\orbital{O}\nالتوزيع الإلكتروني للحديد: $\\econfig[short]{Fe}$'],
+      ['الجدول الدوري', '\\ptable[highlight={Li,Na,K}]']
+    ] },
+    { id: 'lab', ic: '🧪', t: 'أدوات المختبر', note: 'الموضع (x,y) بالسنتيمتر وهو منتصف قاعدة الأداة. الخيارات: fill مستوى السائل من 0 إلى 1، color لونه (blue، pink، أحمر…)، ppt راسب، bubbles فقاعات، label تسمية.', ex: [
+      ['المعايرة', '\\begin{lab}\n  \\stand[h=8, clamp=6.4]{(-2.2,0)}\n  \\burette[fill=0.75, color=colorless, h=6, drops, label=محلول قياسي]{(0,3.6)}\n  \\flask[fill=0.35, color=pink, label=المحلول المجهول + دليل]{(0,0)}\n\\end{lab}'],
+      ['التسخين', '\\begin{lab}\n  \\burner[label=موقد بنزن]{(0,0)}\n  \\tripod[gauze, h=3.3]{(0,0)}\n  \\beaker[fill=0.5, bubbles, label=ماء يغلي]{(0,3.45)}\n\\end{lab}'],
+      ['تفاعل في أنبوب اختبار', '\\begin{lab}\n  \\testtube[fill=0.4, color=blue, ppt, label=راسب]{(0,0)}\n  \\dropper[label=محلول NaOH]{(0,3.6)}\n\\end{lab}']
+    ] },
+    { id: 'tables', ic: '▤', t: 'جداول Word', note: 'tabular يتحول إلى جدول Word حقيقي قابل للتعديل، وخلاياه تقبل $…$.', ex: [
+      ['جدول قيم', '\\begin{tabular}{|c|c|c|c|}\n\\hline\nس & -2 & 0 & 2 \\\\ \\hline\n$د(س)$ & 0 & -4 & 0 \\\\ \\hline\n\\end{tabular}']
+    ] }
+  ];
+
+  var lang = 'ar', mode = 'full';
+  function toast(m) { var t = document.getElementById('toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.tm); toast.tm = setTimeout(function () { t.hidden = true; }, 2000); }
+  function copy(t) {
+    var done = function () { toast('تم النسخ'); };
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(done, fb); else fb();
+    function fb() { var a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select(); try { document.execCommand('copy'); } catch (e) { } a.remove(); done(); }
+  }
+  function showPrompt() {
+    var p = document.getElementById('prompt');
+    var full = mode === 'full' || !AIFormat.PROMPT_AR_SHORT;
+    p.textContent = full ? (lang === 'en' ? AIFormat.PROMPT_FULL_EN || AIFormat.PROMPT_EN : AIFormat.PROMPT_FULL_AR || AIFormat.PROMPT_AR) : (lang === 'en' ? AIFormat.PROMPT_EN_SHORT : AIFormat.PROMPT_AR_SHORT);
+    document.getElementById('modeFull').classList.toggle('on', full); document.getElementById('modeShort').classList.toggle('on', !full);
+    document.getElementById('promptInfo').textContent = full ? 'النسخة الكاملة: كل أوامر وخيارات كل الأدوات (' + p.textContent.length.toLocaleString('ar') + ' حرفاً) — الصقها في أول المحادثة أو في «Project instructions» / «GPT مخصص». للنماذج ذات الحد الصغير (مثل التعليمات المخصصة في ChatGPT) استخدم المختصرة.' : 'النسخة المختصرة: الأوامر الأساسية فقط.';
+    p.style.direction = lang === 'en' ? 'ltr' : 'rtl'; p.style.textAlign = lang === 'en' ? 'left' : 'right';
+    document.getElementById('langAr').classList.toggle('on', lang === 'ar'); document.getElementById('langEn').classList.toggle('on', lang === 'en');
+  }
+  document.getElementById('modeFull').onclick = function () { mode = 'full'; showPrompt(); };
+  document.getElementById('modeShort').onclick = function () { mode = 'short'; showPrompt(); };
+  document.getElementById('langAr').onclick = function () { lang = 'ar'; showPrompt(); };
+  document.getElementById('langEn').onclick = function () { lang = 'en'; showPrompt(); };
+  document.getElementById('copyP').onclick = function () { copy(document.getElementById('prompt').textContent); };
+
+  var OPTS = { rtl: true, arabicFunctions: true, arabicComma: true, digits: 'western', fontSize: 14, mathFont: 'stix2', font: 'Amiri', display: true, mode: 'math' };
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+  function eqEl(tex, mode) {
+    var d = document.createElement('div'); d.className = 'eq';
+    RenderHost.preview(tex, Object.assign({}, OPTS, { mode: mode || 'math' })).then(function (r) {
+      if (r.errors.length) { d.innerHTML = '<span class="err">' + esc(r.errors.join(' — ')) + '</span>'; return; }
+      d.innerHTML = r.svgString; var s = d.firstChild; s.setAttribute('width', (r.width * 1.25).toFixed(2) + 'em'); s.setAttribute('height', (r.total * 1.25).toFixed(2) + 'em');
+    });
+    return d;
+  }
+  function tableEl(t) {
+    var h = '<table dir="auto">';
+    t.rows.forEach(function (r, i) {
+      h += '<tr class="' + (i === 0 && t.header ? 'h' : '') + '">' + r.cells.map(function (c) {
+        return '<td' + (c.span > 1 ? ' colspan="' + c.span + '"' : '') + '>' + c.segs.map(function (sg) { return sg.t === 'math' ? '<span class="m" data-tex="' + esc(sg.v) + '"' + (sg.mode === 'chem' ? ' data-mode="chem"' : '') + '></span>' : esc(sg.v); }).join(' ') + '</td>';
+      }).join('') + '</tr>';
+    });
+    var w = document.createElement('div'); w.innerHTML = h + '</table>';
+    Array.prototype.forEach.call(w.querySelectorAll('.m'), function (sp) {
+      RenderHost.preview(sp.getAttribute('data-tex'), Object.assign({}, OPTS, { display: false, mode: sp.getAttribute('data-mode') || 'math' })).then(function (r) { if (!r.errors.length) { sp.innerHTML = r.svgString; var s = sp.firstChild; s.setAttribute('width', (r.width * 0.9).toFixed(2) + 'em'); s.setAttribute('height', (r.total * 0.9).toFixed(2) + 'em'); s.style.verticalAlign = (-r.depth * 0.9).toFixed(2) + 'em'; } else sp.textContent = sp.getAttribute('data-tex'); });
+    });
+    return w.firstChild;
+  }
+  // renders a whole source the way the editor does (titles, equations, figures, tables)
+  function renderSource(src, box) {
+    var sc = Figures.hasBlocks(src) ? Figures.scan(src) : { text: src, blocks: [] };
+    var chain = Promise.resolve();
+    sc.text.split('\n').forEach(function (line) {
+      var t = line.trim(); if (!t) return;
+      var m = /^\\armathobj\{(\d+)\}$/.exec(t);
+      if (m) {
+        var b = sc.blocks[+m[1]], holder = document.createElement('div'); holder.className = 'fig'; holder.textContent = '…'; box.appendChild(holder);
+        chain = chain.then(function () {
+          return Figures.prepare(b).then(function (md) {
+            if (md.type === 'table') { holder.textContent = ''; holder.appendChild(tableEl(md.table)); return; }
+            return Figures.render(md.kind, md.data).then(function (r) {
+              holder.innerHTML = r.svg; var s = holder.firstChild; s.setAttribute('width', Math.min(r.w, 460).toFixed(0)); s.removeAttribute('height'); s.style.height = 'auto';
+            });
+          }).catch(function (e) { holder.innerHTML = '<span class="err">' + esc(e.message) + '</span>'; });
+        });
+        return;
+      }
+      if (/^%/.test(t)) { var tx = document.createElement('div'); tx.className = 'tx'; tx.textContent = t.replace(/^%\s*/, ''); box.appendChild(tx); return; }
+      if (/\$/.test(t) && /[\u0600-\u06FF]/.test(t.replace(/\$[^$]*\$/g, ''))) {          // text with inline math
+        var row = document.createElement('div'); row.className = 'tx';
+        t.split(/(\$[^$]*\$)/).forEach(function (part) {
+          if (/^\$[^$]*\$$/.test(part)) { var e = eqEl(part.slice(1, -1)); e.style.display = 'inline-block'; e.style.fontSize = '16px'; row.appendChild(e); }
+          else if (part) row.appendChild(document.createTextNode(part));
+        });
+        box.appendChild(row); return;
+      }
+      var ce = t.match(/^\\ce\s*\{([\s\S]*)\}$/);
+      box.appendChild(ce ? eqEl(ce[1], 'chem') : eqEl(t));
+    });
+    return chain;
+  }
+  var sections = document.getElementById('sections'), toc = document.getElementById('toc'), jobs = Promise.resolve();
+  toc.innerHTML = '<a href="#prompt-h">تعليمات الذكاء الاصطناعي</a>';
+  SECTIONS.forEach(function (sec) {
+    toc.insertAdjacentHTML('beforeend', '<a href="#' + sec.id + '">' + sec.t + '</a>');
+    sections.insertAdjacentHTML('beforeend', '<h2 id="' + sec.id + '"><span class="ic">' + sec.ic + '</span>' + sec.t + '</h2><p class="note">' + esc(sec.note) + '</p>');
+    if (sec.rows && sec.rows.length) {
+      var h = '<details class="refbox"' + '><summary>📖 كل الأوامر والخيارات (' + sec.rows.filter(function (r) { return !r.h; }).length + ')</summary><table class="ref"><tr><th style="width:48%">الصيغة</th><th>المعنى</th></tr>';
+      sec.rows.forEach(function (r) {
+        h += r.h ? '<tr class="grp"><td colspan="2">' + esc(r.h) + '</td></tr>' : '<tr><td><code class="cmd">' + esc(r.c) + '</code></td><td>' + esc(r.d) + '</td></tr>';
+      });
+      sections.insertAdjacentHTML('beforeend', h + '</table></details>');
+    }
+    sec.ex.forEach(function (ex) {
+      var d = document.createElement('div'); d.className = 'ex';
+      d.innerHTML = '<div class="t"><span>' + esc(ex[0]) + '</span><button class="o">نسخ</button></div><pre></pre><div class="pv"></div>';
+      d.querySelector('pre').textContent = ex[1];
+      d.querySelector('button').onclick = function () { copy(ex[1]); };
+      sections.appendChild(d);
+      var pv = d.querySelector('.pv');
+      jobs = jobs.then(function () { return renderSource(ex[1], pv); });
+    });
+  });
+  toc.insertAdjacentHTML('beforeend', '<a href="#cleaner-h">جرّب المنظِّف</a>');
+
+  document.getElementById('raw').oninput = function () { document.getElementById('cleaned').value = AIFormat.clean(this.value); };
+  document.getElementById('copyC').onclick = function () { copy(document.getElementById('cleaned').value); };
+  document.getElementById('raw').value = '## القانون العام\n\n**الصيغة:**\n\n\\[\nx = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\n\\]\n\n- حيث \\( a \\neq 0 \\).\n\n```latex\n\\begin{graph}[x=-3:3]\n  \\plot{x^2 - 1}\n\\end{graph}\n```';
+  document.getElementById('cleaned').value = AIFormat.clean(document.getElementById('raw').value);
+  showPrompt();
+})();
+</script>
+</body>
+</html>

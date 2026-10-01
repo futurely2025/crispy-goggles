@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الإحصاء — معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/studio.css?v=5.0.0">
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script>/* office.js blanks pages framed outside Office (PDF studio) — load it only when not embedded there */ if (!/[?&]embed=pdf\b/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');</script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/core/render-host.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+  <script src="js/studio/studio.js?v=5.2.0"></script>
+  <script src="js/math/stats.js?v=5.0.0"></script>
+  <script src="js/math/prob.js?v=5.0.0"></script>
+  <script src="js/studio/chart-render.js?v=5.0.0"></script>
+  <script src="js/figures/chart-markup.js?v=5.0.0"></script>
+</head>
+<body class="studio">
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+    </svg>
+    <div class="lt">جارٍ التحميل…</div>
+  </div>
+  <header class="st-bar">
+    <div class="st-title"><span class="ico">📊</span><span data-t="الإحصاء والرسوم البيانية|Statistics & charts"></span></div>
+    <div class="st-tools"><button type="button" class="tb" id="exportBtn" title="تصدير">⇪</button></div>
+  </header>
+  <nav class="st-tabs" id="tabs">
+    <button type="button" data-tab="chart" aria-pressed="true" data-t="الرسم البياني|Chart"></button>
+    <button type="button" data-tab="calc" data-t="حاسبة المقاييس الإحصائية|Statistics calculator"></button>
+  </nav>
+
+  <main class="st-main" id="chartMain">
+    <section class="st-canvas">
+      <div class="stage" id="stage"></div>
+      <div class="st-status" id="status"></div>
+    </section>
+    <aside class="st-side">
+      <details class="st-sec" open>
+        <summary data-t="نوع الرسم|Chart type"></summary>
+        <div class="bd"><div class="types" id="types"></div></div>
+      </details>
+      <details class="st-sec" open id="distSec" hidden>
+        <summary data-t="معاملات التوزيع|Distribution"></summary>
+        <div class="bd">
+          <div class="grid2" id="distNormal">
+            <label><span data-t="الوسط μ|Mean μ"></span><input class="inp" id="dMean" value="50"></label>
+            <label><span data-t="الانحراف المعياري σ|SD σ"></span><input class="inp" id="dSd" value="10"></label>
+            <label class="wide" style="grid-column:1/-1"><input type="checkbox" id="dZ"> <span data-t="التوزيع الطبيعي المعياري Z|Standard normal Z"></span></label>
+          </div>
+          <div class="grid2" id="distBinom">
+            <label><span data-t="عدد المحاولات ن|Trials n"></span><input class="inp" id="dN" value="10"></label>
+            <label><span data-t="احتمال النجاح ح|Success p"></span><input class="inp" id="dP" value="0.3"></label>
+          </div>
+          <div class="grid2" style="margin-top:6px">
+            <label><span data-t="من (فارغ = −∞)|From (empty = −∞)"></span><input class="inp" id="dFrom" value="40"></label>
+            <label><span data-t="إلى (فارغ = +∞)|To (empty = +∞)"></span><input class="inp" id="dTo" value="60"></label>
+          </div>
+          <p class="hint" data-t="تُظلَّل المنطقة بين «من» و«إلى» ويُكتب احتمالها فوق الرسم.|The area between From and To is shaded and its probability shown."></p>
+        </div>
+      </details>
+      <details class="st-sec" open id="dataSec">
+        <summary data-t="البيانات|Data"></summary>
+        <div class="bd">
+          <div class="grid-wrap"><table class="dg" id="grid"></table></div>
+          <div class="grid-actions" id="gridActions"></div>
+          <p class="hint" data-t="يمكنك لصق البيانات من Excel مباشرة داخل الجدول.|You can paste straight from Excel."></p>
+          <div id="rawBox" hidden>
+            <div class="lbl" data-t="أو أدخل بيانات خاماً لتكوين الفئات تلقائياً:|Or raw data for automatic classes:"></div>
+            <textarea class="inp" id="raw" style="width:100%;height:60px;padding:6px;direction:ltr"></textarea>
+            <div class="row"><span class="lbl" data-t="عدد الفئات|Classes"></span><input class="inp num" id="bins" value="5"><button type="button" class="chip" id="mkBins" data-t="تكوين الفئات|Make classes"></button></div>
+          </div>
+        </div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="العناوين والخيارات|Titles & options"></summary>
+        <div class="bd">
+          <div class="grid2">
+            <label style="grid-column:1/-1"><span data-t="العنوان|Title"></span><input class="inp" id="title" dir="auto"></label>
+            <label><span data-t="عنوان المحور الأفقي|x-axis title"></span><input class="inp" id="xlabel" dir="auto"></label>
+            <label><span data-t="عنوان المحور الرأسي|y-axis title"></span><input class="inp" id="ylabel" dir="auto"></label>
+          </div>
+          <div class="checks" id="optChecks" style="margin-top:8px"></div>
+          <div class="row" style="margin-top:8px"><span class="lbl" data-t="الأرقام|Digits"></span>
+            <div class="seg" id="digSeg"><button type="button" data-v="eastern">١٢٣</button><button type="button" data-v="western">123</button></div>
+            <span class="lbl" data-t="الاتجاه|Direction"></span>
+            <div class="seg" id="notSeg"><button type="button" data-v="ar" data-t="عربي|Arabic"></button><button type="button" data-v="en">LTR</button></div></div>
+          <div class="grid2">
+            <label><span data-t="العرض (px)|Width"></span><input class="inp num" id="W"></label>
+            <label><span data-t="الارتفاع (px)|Height"></span><input class="inp num" id="H"></label>
+          </div>
+        </div>
+      </details>
+      <details class="st-sec">
+        <summary>LaTeX</summary>
+        <div class="bd" id="codeBox"></div>
+      </details>
+    </aside>
+  </main>
+
+  <main class="st-main" id="calcMain" hidden>
+    <section class="st-canvas panel-pad" style="background:#fff">
+      <ol class="steps-out" id="calcSteps"></ol>
+    </section>
+    <aside class="st-side">
+      <details class="st-sec" open>
+        <summary data-t="البيانات|Data"></summary>
+        <div class="bd">
+          <textarea class="inp" id="calcData" style="width:100%;height:110px;padding:8px;direction:ltr;font-family:Consolas,monospace"></textarea>
+          <p class="hint" data-t="قيم مفصولة بفواصل: 3, 5, 7 — أو قيمة:تكرار مثل 2:5, 4:7 — أو فئات مثل 10-20:4, 20-30:7|Values: 3, 5, 7 — value:freq 2:5 — classes 10-20:4"></p>
+          <div class="checks">
+            <label><input type="checkbox" id="sample"><span data-t="عينة (القسمة على ن − 1)|Sample (n − 1)"></span></label>
+          </div>
+        </div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="التوزيعات والتباديل والتوافيق|Distributions & counting"></summary>
+        <div class="bd">
+          <select class="inp" id="pKind" style="width:100%">
+            <option value="normal" data-t="التوزيع الطبيعي|Normal distribution"></option>
+            <option value="binomial" data-t="توزيع ذي الحدين|Binomial distribution"></option>
+            <option value="C" data-t="التوافيق ق(ن، ر)|Combinations C(n, r)"></option>
+            <option value="P" data-t="التباديل ل(ن، ر)|Permutations P(n, r)"></option>
+          </select>
+          <div class="grid2" style="margin-top:6px">
+            <label><span id="pL1"></span><input class="inp" id="pA" value="50"></label>
+            <label><span id="pL2"></span><input class="inp" id="pB" value="10"></label>
+            <label id="pW3"><span id="pL3"></span><input class="inp" id="pC" value="40"></label>
+            <label id="pW4"><span id="pL4"></span><input class="inp" id="pD" value="60"></label>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button type="button" class="btn primary" id="pCalc" data-t="احسب بالخطوات|Solve with steps"></button>
+            <button type="button" class="btn ghost" id="pDraw" data-t="ارسم التوزيع|Draw it"></button>
+          </div>
+        </div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="المقاييس المطلوبة|Measures"></summary>
+        <div class="bd"><div class="checks" id="measures"></div></div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="الإدراج في المستند|Insert"></summary>
+        <div class="bd" style="display:flex;flex-direction:column;gap:6px">
+          <button type="button" class="btn primary" id="insSteps" data-t="إدراج خطوات الحل|Insert the working"></button>
+          <button type="button" class="btn ghost" id="insFreq" data-t="إدراج جدول التكرار|Insert frequency table"></button>
+          <button type="button" class="btn ghost" id="insSummary" data-t="إدراج جدول المقاييس|Insert summary table"></button>
+          <button type="button" class="btn ghost" id="toChart" data-t="ارسم هذه البيانات|Chart this data"></button>
+        </div>
+      </details>
+    </aside>
+  </main>
+
+  <footer class="st-foot">
+    <span class="size" id="sizeInfo"></span>
+    <div class="foot-btns">
+      <button type="button" class="btn ghost" id="cancelBtn" data-t="إلغاء|Cancel"></button>
+      <button type="button" class="btn primary" id="okBtn" data-t="إدراج الرسم|Insert chart"></button>
+    </div>
+  </footer>
+  <div class="pop" id="exportPop" hidden><div class="menu">
+    <button type="button" data-exp="copy" data-t="نسخ كصورة|Copy image"></button>
+    <button type="button" data-exp="png" data-t="تنزيل PNG|Download PNG"></button>
+    <button type="button" data-exp="svg" data-t="تنزيل SVG|Download SVG"></button>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/studio/chart.js?v=5.0.0"></script>
+</body>
+</html>

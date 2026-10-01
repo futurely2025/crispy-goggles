@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الصيغ البنائية — معادلات عربية</title>
+  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
+  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
+  <link rel="stylesheet" href="css/studio.css?v=5.0.0">
+  <style>
+    .lib { display: flex; flex-direction: column; gap: 2px; max-height: 330px; overflow-y: auto; margin-top: 6px; border: 1px solid #e3ecee; border-radius: 9px; padding: 4px; }
+    .lib .cat { font-size: 11px; font-weight: 700; color: var(--tq-2); padding: 6px 6px 2px; position: sticky; top: -4px; background: #fff; }
+    .lib button { border: 0; background: none; text-align: start; padding: 5px 8px; border-radius: 7px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+    .lib button:hover { background: var(--tq-soft); }
+    .lib button[aria-pressed="true"] { background: var(--tq); color: #fff; }
+    .lib button .en { font-size: 11px; opacity: .65; direction: ltr; }
+    #smiles { direction: ltr; font-family: Consolas, monospace; font-size: 13px; width: 100%; }
+    .range { width: 100%; accent-color: var(--tq); }
+  </style>
+  <script src="js/core/logger.js?v=5.7.0"></script>
+  <script>/* office.js blanks pages framed outside Office (PDF studio) — load it only when not embedded there */ if (!/[?&]embed=pdf\b/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');</script>
+  <script src="js/i18n.js?v=5.7.0"></script>
+  <script src="js/studio/raster.js?v=5.4.0"></script>
+  <script src="js/figures/util.js?v=5.0.0"></script>
+  <script src="js/figures/registry.js?v=5.0.0"></script>
+  <script src="js/studio/studio.js?v=5.2.0"></script>
+  <script src="js/chem/chemfig.js?v=5.0.0"></script>
+  <script src="vendor/smiles-drawer/smiles-drawer.min.js?v=2.4.1"></script>
+  <script src="js/chem/molecules.js?v=5.0.0"></script>
+  <script src="js/studio/structure-render.js?v=5.0.0"></script>
+</head>
+<body class="studio">
+  <div class="loader" id="loader">
+    <svg class="arc" viewBox="0 0 120 120" aria-hidden="true">
+      <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#19b7b0"/><stop offset="1" stop-color="#0a7c78"/></linearGradient></defs>
+      <path d="M22 70 A40 40 0 0 1 96 38" fill="none" stroke="url(#lg)" stroke-width="13" stroke-linecap="round"/>
+    </svg>
+    <div class="lt">جارٍ التحميل…</div>
+  </div>
+  <header class="st-bar">
+    <div class="st-title"><span class="ico">⌬</span><span data-t="الصيغ البنائية|Structural formulas"></span></div>
+    <div class="st-tools"><button type="button" class="tb" id="exportBtn" title="تصدير">⇪</button></div>
+  </header>
+  <nav class="st-tabs" id="tabs">
+    <button type="button" data-tab="smiles" aria-pressed="true" data-t="المكتبة وصيغ SMILES|Library & SMILES"></button>
+    <button type="button" data-tab="chemfig" data-t="الكتابة بلغة chemfig|Write in chemfig"></button>
+  </nav>
+  <main class="st-main">
+    <section class="st-canvas">
+      <div class="stage" id="stage"></div>
+      <div class="st-status" id="status"></div>
+    </section>
+    <aside class="st-side">
+      <details class="st-sec" open id="cfSec" hidden>
+        <summary data-t="الصيغة بلغة chemfig|chemfig code"></summary>
+        <div class="bd">
+          <textarea class="code" id="cfCode" spellcheck="false" dir="ltr" style="min-height:110px"></textarea>
+          <div class="lbl" style="margin-top:6px" data-t="الاسم تحت الصيغة|Caption"></div>
+          <input class="inp" id="cfName" dir="auto" style="width:100%">
+          <div class="checks" style="margin-top:6px"><label><input type="checkbox" id="cfMono"><span data-t="بالأسود فقط|Black only"></span></label></div>
+          <div class="lbl" style="margin-top:8px" data-t="أمثلة:|Examples:"></div>
+          <div class="chips" id="cfEx"></div>
+          <p class="hint" data-t="الروابط: - أحادية، = ثنائية، ~ ثلاثية، > و< إسفينية. الزاوية بين قوسين: -[1] = 45°، -[2] = 90°، -[:30] زاوية مطلقة. الفروع بين ( ). الحلقات: *6(…) والأروماتية **6(…).|Bonds - = ~ > <; angles [1]=45°, [:30] absolute; branches ( ); rings *6(…), aromatic **6(…)."></p>
+        </div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="مكتبة المركبات|Molecule library"></summary>
+        <div class="bd">
+          <input class="inp" id="search" style="width:100%" data-ph="ابحث بالاسم: إيثانول، بنزين، أسبرين…|Search: ethanol, benzene…">
+          <div class="lib" id="lib"></div>
+        </div>
+      </details>
+      <details class="st-sec" open>
+        <summary data-t="الصيغة والاسم|Formula & name"></summary>
+        <div class="bd">
+          <div class="lbl" data-t="صيغة SMILES|SMILES"></div>
+          <div class="row"><input class="inp" id="smiles" spellcheck="false"></div>
+          <div class="lbl" data-t="الاسم تحت الصيغة|Caption"></div>
+          <div class="row"><input class="inp" id="name" style="width:100%" dir="auto"></div>
+          <div class="checks">
+            <label><input type="checkbox" id="showName"><span data-t="إظهار الاسم|Show name"></span></label>
+            <label><input type="checkbox" id="showFormula"><span data-t="الصيغة الجزيئية|Molecular formula"></span></label>
+            <label><input type="checkbox" id="terminal"><span data-t="كتابة الكربون الطرفي|Terminal carbons"></span></label>
+            <label><input type="checkbox" id="explicitH"><span data-t="ذرات H المكتوبة|Written H atoms"></span></label>
+          </div>
+          <p class="hint" data-t="للصيغة البنائية المفصّلة اكتب ذرات الهيدروجين صراحة مثل [H]C([H])([H])O[H] أو اختر من «صيغ بنائية مفصّلة».|For full structural formulas write hydrogens explicitly, e.g. [H]C([H])([H])O[H]."></p>
+        </div>
+      </details>
+      <details class="st-sec">
+        <summary data-t="المظهر|Appearance"></summary>
+        <div class="bd">
+          <div class="row"><span class="lbl" data-t="الألوان|Colours"></span>
+            <div class="seg" id="themeSeg"><button type="button" data-v="light" data-t="ألوان العناصر|Element colours"></button><button type="button" data-v="tq" data-t="فيروزي|Turquoise"></button><button type="button" data-v="mono" data-t="أسود|Black"></button></div></div>
+          <div class="lbl" data-t="الحجم|Size"></div><input type="range" class="range" id="scale" min="0.8" max="3" step="0.1">
+          <div class="lbl" data-t="سُمك الروابط|Bond thickness"></div><input type="range" class="range" id="bt" min="0.6" max="2.4" step="0.1">
+          <div class="row"><span class="lbl" data-t="الخط|Font"></span><select class="inp" id="font">
+            <option value="Amiri">أميري</option><option value="Noto Naskh Arabic">نوتو نسخ</option><option value="Scheherazade New">شهرزاد</option>
+            <option value="Noto Kufi Arabic">نوتو كوفي</option><option value="Cairo">القاهرة</option></select></div>
+        </div>
+      </details>
+    </aside>
+  </main>
+  <footer class="st-foot">
+    <span class="size" id="sizeInfo"></span>
+    <div class="foot-btns">
+      <button type="button" class="btn ghost" id="cancelBtn" data-t="إلغاء|Cancel"></button>
+      <button type="button" class="btn primary" id="okBtn" data-t="إدراج الصيغة|Insert structure"></button>
+    </div>
+  </footer>
+  <div class="pop" id="exportPop" hidden><div class="menu">
+    <button type="button" data-exp="copy" data-t="نسخ كصورة|Copy image"></button>
+    <button type="button" data-exp="png" data-t="تنزيل PNG|Download PNG"></button>
+    <button type="button" data-exp="svg" data-t="تنزيل SVG|Download SVG"></button>
+  </div></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="js/core/userfonts.js?v=5.7.0"></script>
+  <script src="js/core/fontselects.js?v=5.4.0"></script>
+  <script src="js/studio/structure.js?v=5.0.0"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+Third-party components
+
+MathJax 4.1 + STIX Two / New Computer Modern / Fira math fonts - Apache License 2.0 / SIL OFL 1.1
+MathLive 0.110 - MIT License - https://mathlive.io
+Amiri, Noto Naskh Arabic, Noto Kufi Arabic, Scheherazade New, Cairo - SIL Open Font License 1.1
+nerdamer 1.1.13 (symbolic math engine used by the step-by-step solver and the graph studio) - MIT License - https://github.com/jiggzson/nerdamer
+SmilesDrawer 2.4.1 (structural formulas) - MIT License - https://github.com/reymond-group/smilesDrawer
+HarfBuzz / harfbuzzjs 0.4.15 (text shaping for vector SVG output, vendor/harfbuzz) - MIT License (Old MIT for HarfBuzz) - https://github.com/harfbuzz/harfbuzzjs
+Tinos, Arimo (Latin/Greek outlines for vector output, fonts/vector) - Apache License 2.0
+STIX Two Math, symbol subset (fonts/vector/STIXTwoMath-sym.ttf) - SIL Open Font License 1.1
+pdf.js 4.10.38 (PDF studio: page rendering, vendor/pdfjs) - Apache License 2.0 - https://github.com/mozilla/pdf.js
+pdf-lib 1.17.1 (PDF studio: writing the edited PDF, vendor/pdf-lib) - MIT License - https://github.com/Hopding/pdf-lib
