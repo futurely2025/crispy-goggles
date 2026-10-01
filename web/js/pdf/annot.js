@@ -19,7 +19,7 @@
   function deco() { S.deco = S.deco || {}; return S.deco; }
 
   // ================================================================ object rendering
-  var REGION = { edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1 };
+  var REGION = { ocr: 1, edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1 };
   var FIELD_LABEL = { text: 'حقل نص', check: 'مربع اختيار', radio: 'زر خيار', combo: 'قائمة منسدلة', list: 'قائمة', button: 'زر' };
   var FIELD_ICON = { text: 'Aa', check: '☑', radio: '◉', combo: '▾', list: '☰', button: '▭' };
   function inner(o, data, exporting) {
@@ -73,6 +73,7 @@
   function region(tool, i, r) {
     var p = S.pages[i], click = r.w < 5 && r.h < 5;
     var o;
+    if (tool === 'ocr') { if (window.PdfOcr) PdfOcr.run(i, r); return; }
     if (tool === 'edittext') { editTextRegion(i, r); return; }
     if (tool === 'redact') { if (click) return; o = { id: P.uid(), t: 'redact', x: r.x, y: r.y, w: r.w, h: r.h, fc: '#000000', label: '' }; }
     else if (tool === 'link') { if (click) { r = { x: r.x - 60, y: r.y - 8, w: 120, h: 18 }; } o = { id: P.uid(), t: 'link', x: r.x, y: r.y, w: Math.max(12, r.w), h: Math.max(10, r.h), kind: 'url', url: '', pid: p.id }; }
@@ -595,7 +596,8 @@
       });
   }
 
-  window.PdfAnnot = { inner: inner, bbox: bbox, move: move, isTool: isTool, region: region, dbl: dbl, needsRaster: needsRaster, REDACT_Q: REDACT_Q, burn: burn, begin: begin, exportPage: exportPage, finish: finish,
+  function coverRegion(i, r) { var col = sampleColors(i, r); S.pages[i].objs.push(P.born({ id: P.uid(), t: 'redact', x: r.x, y: r.y, w: r.w, h: r.h, fc: col.bg, label: '', cover: true, soft: true })); }
+  window.PdfAnnot = { coverRegion: coverRegion, inner: inner, bbox: bbox, move: move, isTool: isTool, region: region, dbl: dbl, needsRaster: needsRaster, REDACT_Q: REDACT_Q, burn: burn, begin: begin, exportPage: exportPage, finish: finish,
     signDialog: signDialog, redactSearch: redactSearch, docProps: docProps, applyMark: applyMark, openPanel: openPanel, renderComments: renderComments, addBookmark: addBookmark };
   build();
   var rc = null; document.addEventListener('pdf-opened', function () { renderComments(); }); setInterval(function () { var c = $('cmtCount'); if (c && S.pages) { var n = 0; S.pages.forEach(function (p) { p.objs.forEach(function (o) { if (o.t === 'note' || (o.t === 'mark' && o.c)) n++; }); }); c.textContent = n || ''; } }, 2500);

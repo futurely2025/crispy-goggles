@@ -14,3 +14,4 @@ JSZip 3.10.2 (ZIP output of the PDF tools, vendor/jszip) - MIT or GPLv3 (used un
 mammoth.js 1.13.0 (Word .docx to HTML for "Word to PDF", vendor/mammoth-docx) - BSD 2-Clause - https://github.com/mwilliamson/mammoth.js
 jsdiff 9.0.0 (text comparison in "Compare PDF", vendor/diff) - BSD 3-Clause - https://github.com/kpdecker/jsdiff
 qpdf (WebAssembly build @jspawn/qpdf-wasm 0.0.2: password protect / unlock, vendor/qpdf) - Apache License 2.0 - https://github.com/jsscheller/qpdf-wasm
+Tesseract.js 5 + tesseract.js-core 6 (OCR in the browser, vendor/tesseract) - Apache License 2.0 - https://github.com/naptha/tesseract.js ; language data ara / eng (tessdata_best_int) - Apache License 2.0
