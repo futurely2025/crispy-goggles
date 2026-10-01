@@ -149,11 +149,11 @@
 
   // qpdf (WebAssembly) — encryption, decryption and repair. One fresh instance per call (the CLI keeps global state).
   var qpdfFactory;
-  function qpdfModule() {
+  function qpdfModule(sink) {
     var make = function () {
       return global.__qpdfFactory({
         locateFile: function (f) { return base + 'vendor/qpdf/' + f + VER; },
-        print: function () {}, printErr: function () {}
+        print: function (s) { sink.push(s); }, printErr: function (s) { sink.push(s); }
       });
     };
     if (global.__qpdfFactory) return make();
@@ -167,16 +167,14 @@
   /** run qpdf with args; input bytes at /in.pdf, output read from /out.pdf. Resolves {bytes, code, log}. */
   function qpdf(bytes, args) {
     var log = [];
-    return qpdfModule().then(function (m) {
+    return qpdfModule(log).then(function (m) {
       var FS = m.FS, code = 0;
       FS.writeFile('/in.pdf', bytes);
-      var errs = [];
-      m.printErr = function (s) { errs.push(s); }; m.print = function (s) { log.push(s); };
-      try { m.callMain(args.map(function (a) { return a === '$IN' ? '/in.pdf' : a === '$OUT' ? '/out.pdf' : a; })); }
-      catch (e) { code = e && e.status !== undefined ? e.status : 2; if (e && e.status === undefined && !(e && /exit/.test(String(e)))) errs.push(String(e)); }
+      try { code = m.callMain(args.map(function (a) { return a === '$IN' ? '/in.pdf' : a === '$OUT' ? '/out.pdf' : a; })); }
+      catch (e) { code = e && e.status !== undefined ? e.status : 2; if (e && e.status === undefined) log.push(String((e && e.message) || e)); }
       var out = null;
       try { out = FS.readFile('/out.pdf'); } catch (e) { /* no output */ }
-      return { bytes: out, code: code, log: log.concat(errs).join('\n') };
+      return { bytes: out, code: code, log: log.join('\n') };
     });
   }
 

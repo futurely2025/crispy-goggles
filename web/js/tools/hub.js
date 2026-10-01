@@ -23,18 +23,17 @@
     return h('a', { class: 'hub-tile', href: href, style: '--c:' + t.col, 'data-s': (t.ar + ' ' + t.en + ' ' + t.d).toLowerCase() }, [
       h('span', { class: 'ic', text: t.ico }), h('div', null, [h('b', { text: t.ar }), h('small', { text: t.en }), h('p', { text: t.d })])]);
   }
+  var cat = 'all';
+  var chips = h('div', { class: 'tl-seg', style: 'margin:16px 0 4px;max-width:100%;overflow-x:auto;flex-wrap:nowrap' }, [['all', 'الكل']].concat(T.CATS.map(function (c) { return [c[0], c[1]]; })).map(function (c) {
+    return h('button', { type: 'button', class: c[0] === 'all' ? 'on' : '', 'data-v': c[0], text: c[1], style: 'flex:none', onclick: function () { cat = c[0]; [].forEach.call(chips.children, function (b) { b.classList.toggle('on', b.getAttribute('data-v') === cat); }); draw(search.value); } });
+  }));
+  main.insertBefore(chips, out);
   function draw(q) {
     out.innerHTML = '';
     q = (q || '').trim().toLowerCase();
-    var n = 0;
-    T.CATS.forEach(function (c) {
-      var list = T.TOOLS.filter(function (t) { return t.cat === c[0] && (!q || (t.ar + ' ' + t.en + ' ' + t.d).toLowerCase().indexOf(q) >= 0); });
-      if (!list.length) return;
-      n += list.length;
-      out.appendChild(h('h2', { class: 'hub-cat' }, [c[1], h('small', { text: c[2] })]));
-      out.appendChild(h('div', { class: 'hub-grid' }, list.map(tile)));
-    });
-    if (!n) out.appendChild(h('div', { class: 'hub-empty', text: 'لا توجد أداة بهذا الاسم' }));
+    var list = T.TOOLS.filter(function (t) { return (cat === 'all' || t.cat === cat) && (!q || (t.ar + ' ' + t.en + ' ' + t.d).toLowerCase().indexOf(q) >= 0); });
+    if (!list.length) { out.appendChild(h('div', { class: 'hub-empty', text: 'لا توجد أداة بهذا الاسم' })); return; }
+    out.appendChild(h('div', { class: 'hub-grid' }, list.map(tile)));
   }
   search.oninput = function () { draw(search.value); };
   draw('');
