@@ -19,9 +19,9 @@
   function deco() { S.deco = S.deco || {}; return S.deco; }
 
   // ================================================================ object rendering
-  var REGION = { ocr: 1, edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1 };
-  var FIELD_LABEL = { text: 'حقل نص', check: 'مربع اختيار', radio: 'زر خيار', combo: 'قائمة منسدلة', list: 'قائمة', button: 'زر' };
-  var FIELD_ICON = { text: 'Aa', check: '☑', radio: '◉', combo: '▾', list: '☰', button: '▭' };
+  var REGION = { ocr: 1, edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1, fsig: 1 };
+  var FIELD_LABEL = { text: 'حقل نص', check: 'مربع اختيار', radio: 'زر خيار', combo: 'قائمة منسدلة', list: 'قائمة', button: 'زر', sig: 'حقل توقيع' };
+  var FIELD_ICON = { text: 'Aa', check: '☑', radio: '◉', combo: '▾', list: '☰', button: '▭', sig: '✍' };
   function inner(o, data, exporting) {
     var out = '', export_ = data || exporting;
     switch (o.t) {
@@ -68,7 +68,7 @@
 
   // ================================================================ region tools (redact, link, form fields)
   function isTool(t) { return !!REGION[t]; }
-  var seq = { ftext: 0, fcheck: 0, fradio: 0, fcombo: 0, flist: 0, fbtn: 0 };
+  var seq = { ftext: 0, fcheck: 0, fradio: 0, fcombo: 0, flist: 0, fbtn: 0, fsig: 0 };
   function nextName(prefix, fk) { var all = []; S.pages.forEach(function (p) { p.objs.forEach(function (o) { if (o.t === 'field') all.push(o.name); }); }); var n = 1; while (all.indexOf(prefix + n) >= 0) n++; return prefix + n; }
   function region(tool, i, r) {
     var p = S.pages[i], click = r.w < 5 && r.h < 5;
@@ -78,12 +78,12 @@
     if (tool === 'redact') { if (click) return; o = { id: P.uid(), t: 'redact', x: r.x, y: r.y, w: r.w, h: r.h, fc: '#000000', label: '' }; }
     else if (tool === 'link') { if (click) { r = { x: r.x - 60, y: r.y - 8, w: 120, h: 18 }; } o = { id: P.uid(), t: 'link', x: r.x, y: r.y, w: Math.max(12, r.w), h: Math.max(10, r.h), kind: 'url', url: '', pid: p.id }; }
     else {
-      var fk = { ftext: 'text', fcheck: 'check', fradio: 'radio', fcombo: 'combo', flist: 'list', fbtn: 'button' }[tool];
+      var fk = { ftext: 'text', fcheck: 'check', fradio: 'radio', fcombo: 'combo', flist: 'list', fbtn: 'button', fsig: 'sig' }[tool];
       var sq = fk === 'check' || fk === 'radio';
-      var w = click ? (sq ? 16 : fk === 'list' ? 140 : 150) : r.w, h = click ? (sq ? 16 : fk === 'list' ? 70 : fk === 'button' ? 26 : 22) : r.h;
+      var w = click ? (sq ? 16 : fk === 'list' ? 140 : fk === 'sig' ? 180 : 150) : r.w, h = click ? (sq ? 16 : fk === 'list' ? 70 : fk === 'sig' ? 50 : fk === 'button' ? 26 : 22) : r.h;
       if (sq) { var m = Math.max(12, Math.min(w, h)); w = h = m; }
       var px = click ? r.x - w / 2 : r.x, py = click ? r.y - h / 2 : r.y;
-      o = { id: P.uid(), t: 'field', fk: fk, x: px, y: py, w: w, h: h, name: nextName({ text: 'نص', check: 'اختيار', radio: 'خيار', combo: 'قائمة', list: 'سرد', button: 'زر' }[fk] + '_', fk), value: fk === 'button' ? 'زر' : '', opts: fk === 'combo' || fk === 'list' ? ['الخيار 1', 'الخيار 2', 'الخيار 3'] : [], size: 12, req: false, ro: false, ml: fk === 'text' && h > 40, grp: fk === 'radio' ? 'المجموعة_1' : '' };
+      o = { id: P.uid(), t: 'field', fk: fk, x: px, y: py, w: w, h: h, name: nextName({ text: 'نص', check: 'اختيار', radio: 'خيار', combo: 'قائمة', list: 'سرد', button: 'زر', sig: 'توقيع' }[fk] + '_', fk), value: fk === 'button' ? 'زر' : '', opts: fk === 'combo' || fk === 'list' ? ['الخيار 1', 'الخيار 2', 'الخيار 3'] : [], size: 12, req: false, ro: false, ml: fk === 'text' && h > 40, grp: fk === 'radio' ? 'المجموعة_1' : '' };
     }
     P.push(); p.objs.push(o); P.setTool('select'); P.select(i, o.id); P.changed(); P.markThumb(i);
     if (o.t === 'link') editLink(i, o, true); else if (o.t === 'field') editField(i, o, true);
@@ -415,6 +415,15 @@
       else if (o.fk === 'radio') { var g = form.getFieldMaybe(o.grp || o.name) || form.createRadioGroup(o.grp || o.name); g.addOptionToPage(o.name, page, box); if (o.value) g.select(o.name); f = g; }
       else if (o.fk === 'combo') { f = form.createDropdown(o.name); f.addOptions(o.opts && o.opts.length ? o.opts : ['']); f.addToPage(page, box); if (o.size) f.setFontSize(o.size); if (o.value && o.opts.indexOf(o.value) >= 0) f.acroField.setValues([hx(o.value)]); }
       else if (o.fk === 'list') { f = form.createOptionList(o.name); f.addOptions(o.opts && o.opts.length ? o.opts : ['']); f.addToPage(page, box); if (o.size) f.setFontSize(o.size); }
+      else if (o.fk === 'sig') {
+        // an empty signature field: Acrobat and other readers offer "Sign here" and apply a real digital signature
+        var ctx = out.context, N = L.PDFName, d = ctx.obj({ Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: hx(o.name), F: 4, Rect: [box.x, box.y, box.x + box.width, box.y + box.height],
+          MK: ctx.obj({ BC: [0.36, 0.55, 0.94], BG: [0.94, 0.96, 1] }), BS: ctx.obj({ W: 1, S: 'D', D: [3, 2] }), TU: hx('وقّع هنا: ' + o.name) }), ref = ctx.register(d);
+        page.node.addAnnot(ref);
+        var af = out.catalog.lookup(N.of('AcroForm')) || form.acroForm.dict; var fl = af.lookup(N.of('Fields')); if (fl && fl.push) fl.push(ref);
+        var sf = af.get(N.of('SigFlags')); if (!sf) af.set(N.of('SigFlags'), L.PDFNumber.of(1));
+        return;
+      }
       else if (o.fk === 'button') { f = form.createButton(o.name); f.addToPage(o.value || o.name, page, box); }
       if (f && o.req && f.enableRequired) f.enableRequired(); if (f && o.ro && f.enableReadOnly) f.enableReadOnly();
     } catch (e) { if (window.ArLog) ArLog.error('field', e); }
@@ -574,7 +583,7 @@
       btn('id="cmtBtn"', '💬', 'قائمة التعليقات', 'اعرض كل التعليقات في الشريط الجانبي') + btn('data-tool="erase"', '⌫', 'ممحاة'));
     var forms = nav('toolsForms',
       btn('data-tool="select"', '⬚', 'تحديد') + sep + btn('id="signBtn"', '✍', 'توقيع', 'ارسم توقيعك أو اكتبه أو ارفع صورته') + btn('id="initBtn"', 'AB', 'الأحرف الأولى') + sep +
-      btn('data-tool="ftext"', 'Aa', 'حقل نص', 'اسحب لرسم حقل نص تفاعلي') + btn('data-tool="fcheck"', '☑', 'مربع اختيار') + btn('data-tool="fradio"', '◉', 'زر خيار') + btn('data-tool="fcombo"', '▾', 'قائمة منسدلة') + btn('data-tool="flist"', '☰', 'قائمة') + btn('data-tool="fbtn"', '▭', 'زر') + sep +
+      btn('data-tool="ftext"', 'Aa', 'حقل نص', 'اسحب لرسم حقل نص تفاعلي') + btn('data-tool="fcheck"', '☑', 'مربع اختيار') + btn('data-tool="fradio"', '◉', 'زر خيار') + btn('data-tool="fcombo"', '▾', 'قائمة منسدلة') + btn('data-tool="flist"', '☰', 'قائمة') + btn('data-tool="fbtn"', '▭', 'زر') + btn('data-tool="fsig"', '✍', 'حقل توقيع رقمي', 'حقل فارغ يوقّعه القارئ بتوقيع رقمي في Acrobat') + sep +
       btn('data-tool="link"', '🔗', 'رابط', 'اسحب مستطيلاً: رابط لموقع أو صفحة أو بريد') + btn('data-tool="text"', 'T', 'نص (تعبئة)') + btn('data-tool="stamp"', '✓', 'علامة', 'أختام ✓ ✗ التاريخ…'));
     var prot = nav('toolsProtect',
       btn('data-tool="select"', '⬚', 'تحديد') + sep + btn('data-tool="redact"', '■', 'تنقيح', 'اسحب مستطيلاً فوق ما تريد إخفاءه نهائياً') + btn('id="redSearchBtn"', '🔍', 'تنقيح بالبحث', 'ابحث عن نص أو بريد أو أرقام وأخفِها كلها') +

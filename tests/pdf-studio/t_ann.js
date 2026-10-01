@@ -27,6 +27,7 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright'); const f
   await p.locator('[data-tool=fcheck]').click(); r = await R(); await p.mouse.click(r.x + 60 * r.k, r.y + 320 * r.k); await p.waitForTimeout(400); await p.locator('.dlg [data-a=ok]').click(); await p.waitForTimeout(300);
   // combo
   await p.locator('[data-tool=fcombo]').click(); r = await R(); await p.mouse.click(r.x + 200 * r.k, r.y + 330 * r.k); await p.waitForTimeout(400); await p.locator('.dlg [data-a=ok]').click(); await p.waitForTimeout(300);
+  await p.locator('[data-tool=fsig]').click(); r = await R(); await p.mouse.move(r.x + 40 * r.k, r.y + 400 * r.k); await p.mouse.down(); await p.mouse.move(r.x + 220 * r.k, r.y + 450 * r.k, { steps: 4 }); await p.mouse.up(); await p.waitForTimeout(400); await p.locator('.dlg [data-a=ok]').click(); await p.waitForTimeout(300);
   // shape + bookmarks
   await p.evaluate(() => { window.PdfAnnot.openPanel('bmarks'); }); await p.locator('#bmAdd').click(); await p.waitForTimeout(300); await p.locator('.dlg [data-a=ok]').click(); await p.waitForTimeout(300);
   console.log('objs:', await p.evaluate(() => JSON.stringify(window.__pdf.S.pages[0].objs.map(o => o.t + (o.fk ? ':' + o.fk : '')))));
