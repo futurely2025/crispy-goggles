@@ -186,9 +186,31 @@
       var hs = strokeAttr(Object.assign({}, ln, { dash: 'solid', cap: 'round' }));
       out += headMarkup(a0, g.p1[0], g.p1[1], g.t0, sz0, ln.c, ln.w, hs) + headMarkup(a1, g.p2[0], g.p2[1], g.t1 + Math.PI, sz1, ln.c, ln.w, hs);
     }
+    if (s.meas) out += measureLabel(o, s, g, ln);
     if (preview) out += '<path d="' + path + '" fill="none" stroke="transparent" stroke-width="' + f2(Math.max(10 / S.zoom, ln.w + 6)) + '" stroke-linecap="round" stroke-linejoin="round"/>';
     if (preview && closed && o.pts && o.pts.length > 2) out += '<path d="' + path + '" fill="transparent"/>';
     return { defs: defs, body: out };
+  }
+
+  // ------------------------------------------------------------ measuring: length / perimeter / area with the page scale
+  function measureLabel(o, s, g, ln) {
+    var m = S.opt.measure || { unit: 'سم', per: 0.03528 }, pts = linePts(o).slice(); if (o.cur) pts.push(o.cur);
+    if (pts.length < 2) return '';
+    var len = 0, k; for (k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]);
+    if (s.closed && pts.length > 2) len += Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]);
+    var txt, cx, cy;
+    if (s.meas === 'area') {
+      if (pts.length < 3) return '';
+      var a = 0, sx = 0, sy = 0; for (k = 0; k < pts.length; k++) { var p1 = pts[k], p2 = pts[(k + 1) % pts.length]; a += p1[0] * p2[1] - p2[0] * p1[1]; sx += p1[0]; sy += p1[1]; }
+      txt = (Math.abs(a / 2) * m.per * m.per).toFixed(2) + ' ' + m.unit + '²'; cx = sx / pts.length; cy = sy / pts.length;
+    } else {
+      txt = (len * m.per).toFixed(2) + ' ' + m.unit;
+      var i1 = Math.floor((pts.length - 1) / 2), p3 = pts[i1], p4 = pts[i1 + 1] || pts[i1], dx = p4[0] - p3[0], dy = p4[1] - p3[1], L = Math.hypot(dx, dy) || 1;
+      cx = (p3[0] + p4[0]) / 2 + dy / L * -9; cy = (p3[1] + p4[1]) / 2 + dx / L * 9;
+    }
+    var lab = { text: txt, size: 10, color: ln.c, align: 'center', bold: true, x: cx - 45, y: cy - 8, w: 90, h: 16, bg: '#ffffff', lh: 1.2 };
+    lab.h = P.textHeight(lab);
+    return P.textSvgInner(lab);
   }
 
   // ------------------------------------------------------------ text inside a shape

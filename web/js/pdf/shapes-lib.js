@@ -88,6 +88,11 @@
   L('polygon', 'مضلع حر', 'Polygon', { lt: 'poly', multi: true, closed: true });
   L('cloudMarkup', 'سحابة مراجعة', 'Revision cloud', { lt: 'cloud', multi: true, closed: true });
 
+  cur = cat('measure', 'أدوات القياس', 'Measure');
+  L('measureDist', 'قياس مسافة', 'Measure distance', { a0: 'bar', a1: 'bar', dim: true, meas: 'dist' });
+  L('measurePoly', 'قياس محيط', 'Measure perimeter', { lt: 'poly', multi: true, meas: 'perim' });
+  L('measureArea', 'قياس مساحة', 'Measure area', { lt: 'poly', multi: true, closed: true, meas: 'area' });
+
   // ================================================================ basic shapes
   cur = cat('basic', 'أشكال أساسية', 'Basic shapes');
   S('rect', 'مستطيل', 'Rectangle', function (w, h) { return rrect(0, 0, w, h, 0); });

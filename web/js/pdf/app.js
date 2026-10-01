@@ -605,6 +605,7 @@
         return '<image href="' + lookHref(o, data) + '" x="' + f2(o.x) + '" y="' + f2(o.y) + '" width="' + f2(o.w) + '" height="' + f2(o.h) + '" preserveAspectRatio="none"/>';
       case 'text': return textSvgInner(o);
       case 'shape': return window.PdfShapes ? PdfShapes.inner(o, data, exporting) : '';
+      case 'mark': case 'redact': case 'link': case 'field': return window.PdfAnnot ? PdfAnnot.inner(o, data, exporting) : '';
       case 'note': return noteInner(o, exporting);
       case 'ink':
         var d = inkPath(o.pts);
@@ -652,6 +653,7 @@
   }
   function bbox(o) {
     if (o.t === 'shape' && window.PdfShapes) return PdfShapes.bbox(o);
+    if (o.t === 'mark' && window.PdfAnnot) return PdfAnnot.bbox(o);
     if (o.t === 'note') return { x: o.x, y: o.y, w: 20, h: 20 };
     if (o.t === 'ink') {
       var xs = o.pts.map(function (p) { return p[0]; }), ys = o.pts.map(function (p) { return p[1]; }), m = o.width / 2;
@@ -679,7 +681,7 @@
       if (list.length > 1) { var u = unionBox(list); out += '<rect class="selbox all" x="' + f2(u.x - 5) + '" y="' + f2(u.y - 5) + '" width="' + f2(u.w + 10) + '" height="' + f2(u.h + 10) + '"/>'; }
       var s = list.length === 1 ? list[0] : null;
       if (s && s.t === 'shape' && window.PdfShapes) out += PdfShapes.overlay(s, S.zoom);
-      else if (s && s.t !== 'ink' && s.t !== 'note' && !s.lock) {
+      else if (s && s.t !== 'ink' && s.t !== 'note' && s.t !== 'mark' && !s.lock) {
         var b1 = bbox(s);
         [[b1.x + b1.w, b1.y + b1.h, 'se'], [b1.x, b1.y, 'nw'], [b1.x + b1.w, b1.y, 'ne'], [b1.x, b1.y + b1.h, 'sw']].forEach(function (h) {
           out += '<rect class="hd' + (h[2] === 'ne' || h[2] === 'sw' ? ' h2' : '') + '" data-h="' + h[2] + '" x="' + f2(h[0] - hs) + '" y="' + f2(h[1] - hs) + '" width="' + f2(hs * 2) + '" height="' + f2(hs * 2) + '"/>';
@@ -730,7 +732,7 @@
   // ------------------------------------------------------------ tools & pointer
   function setTool(t) {
     S.tool = t;
-    Array.prototype.forEach.call(document.querySelectorAll('#tools [data-tool]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tool === t)); });
+    Array.prototype.forEach.call(document.querySelectorAll('.tools [data-tool]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.tool === t)); });
     document.body.className = 'pdfapp tool-' + t + (S.preview ? ' preview' : '') + (t === 'textsel' ? ' textsel' : '');
     $('viewer').classList.toggle('hand', t === 'hand');
     if (t !== 'select' && S.sel) { var pg = S.sel.page; S.sel = null; drawOverlay(pg); }
@@ -808,6 +810,8 @@
     } else if (/^(rect|ellipse|line|arrow|white)$/.test(t)) {
       drag = { kind: 'shape', i: i, sv: sv, o: t === 'white' ? { id: uid(), t: t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: S.props.color, width: S.props.width, fill: S.props.fill } : born({ id: uid(), t: t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: S.props.color, width: S.props.width, fill: S.props.fill }) };
       push(); p.objs.push(drag.o);
+    } else if (window.PdfAnnot && PdfAnnot.isTool(t)) {
+      drag = { kind: 'annreg', i: i, sv: sv, start: pt, cur: pt, tool: t };
     } else if (t === 'shape' && window.PdfShapes) {
       var sd = PdfShapes.onToolDown(i, sv, pt, e);
       if (sd === 'poly') { e.preventDefault(); return; }
@@ -868,7 +872,7 @@
       mr.setAttribute('x', Math.min(drag.start[0], pt[0])); mr.setAttribute('y', Math.min(drag.start[1], pt[1]));
       mr.setAttribute('width', Math.abs(pt[0] - drag.start[0])); mr.setAttribute('height', Math.abs(pt[1] - drag.start[1]));
       return;
-    } else if (drag.kind === 'snap' || drag.kind === 'crop' || drag.kind === 'clip') {
+    } else if (drag.kind === 'snap' || drag.kind === 'crop' || drag.kind === 'clip' || drag.kind === 'annreg') {
       drag.cur = pt;
       var sv = drag.sv, r = sv.querySelector('.snaprect');
       if (!r) { r = document.createElementNS(SVGNS, 'rect'); r.setAttribute('class', 'snaprect'); sv.appendChild(r); }
@@ -904,6 +908,10 @@
       if (got.length) select(d.i, got[0], got);
     }
     else if (d.kind === 'erase') { changed(); }
+    else if (d.kind === 'annreg') {
+      var ar = d.sv.querySelector('.snaprect'); if (ar) ar.remove();
+      PdfAnnot.region(d.tool, d.i, { x: Math.min(d.start[0], d.cur[0]), y: Math.min(d.start[1], d.cur[1]), w: Math.abs(d.cur[0] - d.start[0]), h: Math.abs(d.cur[1] - d.start[1]) });
+    }
     else if (d.kind === 'snap' || d.kind === 'crop' || d.kind === 'clip') {
       var x = Math.min(d.start[0], d.cur[0]), y = Math.min(d.start[1], d.cur[1]), w = Math.abs(d.cur[0] - d.start[0]), h = Math.abs(d.cur[1] - d.start[1]);
       var r = d.sv.querySelector('.snaprect'); if (r) r.remove();
@@ -932,6 +940,7 @@
   }
   function moveObj(o, g, dx, dy) {
     if (o.t === 'shape' && window.PdfShapes) { PdfShapes.move(o, g, dx, dy); return; }
+    if (o.t === 'mark' && window.PdfAnnot) { PdfAnnot.move(o, g, dx, dy); return; }
     if (o.t === 'ink') { o.pts = g.pts.map(function (p) { return [p[0] + dx, p[1] + dy]; }); return; }
     if (o.x1 !== undefined) { o.x1 = g.x1 + dx; o.y1 = g.y1 + dy; o.x2 = g.x2 + dx; o.y2 = g.y2 + dy; return; }
     o.x = g.x + dx; o.y = g.y + dy;
@@ -957,6 +966,7 @@
     if (o.lock) return toast('العنصر مقفل — افتح القفل من الشريط لتعديله');
     if (o.t === 'text') editText(i, o);
     else if (o.t === 'shape' && window.PdfShapes) PdfShapes.dbl(i, o, pt);
+    else if (/^(link|field|redact|mark)$/.test(o.t) && window.PdfAnnot) PdfAnnot.dbl(i, o);
     else if (o.t === 'svg' && o.kind !== 'stamp') editSvgObj(i, o);
     else if (o.t === 'note') editNote(i, o);
   }
@@ -1733,7 +1743,8 @@
     };
     var list = (opts.pages || S.pages.map(function (p, k) { return k; })).filter(function (k) { return !(opts.student && S.pages[k].sol); });
     if (!list.length) return Promise.reject(new Error('لا توجد صفحات للحفظ' + (opts.student ? ' (كل الصفحات المختارة صفحات حل)' : '')));
-    var qual = QUALITY[opts.quality] || null;
+    var qual = QUALITY[opts.quality] || null, redactedPages = [];
+    if (window.PdfAnnot) PdfAnnot.begin();
     return L.PDFDocument.create().then(function (d) {
       out = d;
       var chain = Promise.resolve();
@@ -1742,8 +1753,9 @@
           busy(true, 'جارٍ إنشاء ملف PDF… ' + (n + 1) + ' / ' + list.length);
           var p = S.pages[idx], objs = opts.student ? p.objs.filter(function (o) { return !o.sol; }) : p.objs;
           var info = { n: n + 1, N: list.length, student: !!opts.student };
-          var made;
-          if (p.src >= 0 && !qual) {
+          var made, pq = qual || (window.PdfAnnot && p.src >= 0 && PdfAnnot.needsRaster(objs) ? PdfAnnot.REDACT_Q : null);
+          if (pq && !qual) redactedPages.push(idx + 1);
+          if (p.src >= 0 && !pq) {
             made = Promise.all([lib(p.doc || 'main'), loadSrc(p)]).then(function (r) {
               return out.copyPages(r[0], [p.src]).then(function (c) {
                 var pg = c[0], total = (r[1].rotate + p.rot) % 360;
@@ -1754,11 +1766,12 @@
             });
           } else if (p.src >= 0) {
             made = loadSrc(p).then(function (sp) {
-              var k = qual.dpi / 72, vp = sp.getViewport({ scale: k, rotation: (sp.rotate + p.rot) % 360 });
+              var k = pq.dpi / 72, vp = sp.getViewport({ scale: k, rotation: (sp.rotate + p.rot) % 360 });
               var cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
               var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
               return sp.render({ canvasContext: cx, viewport: vp }).promise.then(function () {
-                return new Promise(function (ok) { cv.toBlob(ok, 'image/jpeg', qual.q); });
+                if (window.PdfAnnot) PdfAnnot.burn(cx, k, objs, p);
+                return new Promise(function (ok) { cv.toBlob(ok, 'image/jpeg', pq.q); });
               }).then(function (blob) { cv.width = cv.height = 0; return blob.arrayBuffer(); }).then(function (buf) {
                 return out.embedJpg(buf);
               }).then(function (img) {
@@ -1776,6 +1789,7 @@
             return drawObjs(out, m.page, p, m.toPdf, objs, deco).then(function () {
               var notes = objs.filter(function (o) { return o.t === 'note'; });
               if (notes.length) addNotes(out, m.page, notes, m.toPdf);
+              if (window.PdfAnnot) PdfAnnot.exportPage(out, m.page, p, m.toPdf, objs, n);
               if (p.crop) {
                 var c = p.crop, a = apply(m.toPdf, c.x, c.y), b = apply(m.toPdf, c.x + c.w, c.y + c.h);
                 var x0 = Math.min(a[0], b[0]), y0 = Math.min(a[1], b[1]);
@@ -1790,7 +1804,9 @@
       out.setTitle(S.name.replace(/\.pdf$/i, '') + (opts.student ? ' — نسخة الطالب' : ''));
       out.setProducer('معادلات عربية — استوديو PDF');
       out.setCreator('معادلات عربية');
-      return out.save({ useObjectStreams: true });
+      if (window.PdfAnnot) PdfAnnot.finish(out, opts);
+      if (redactedPages.length) toast('طُبّق التنقيح نهائياً في الصفحات: ' + redactedPages.slice(0, 15).join('، ') + (redactedPages.length > 15 ? '…' : '') + ' (حُوّلت إلى صور)');
+      return out.save({ useObjectStreams: true, updateFieldAppearances: false });
     });
   }
   // sticky notes become real PDF comments (the yellow note icon in Acrobat and every PDF reader)
@@ -1990,5 +2006,5 @@
   window.__pdf = { S: S, snapshot: snapshot, restore: restore, inkPath: inkPath, simplify: simplify, openBytes: openBytes, exportPdf: exportPdf, exportDialog: exportDialog, buildPdf: buildPdf, insertFromEditor: insertFromEditor, insertFigure: insertFigure, pageOp: pageOp, setTool: setTool, drawOverlay: drawOverlay, layoutPages: layoutPages, snapshotRegion: snapshotRegion, select: select, insertPdfFile: insertPdfFile, loadSrc: loadSrc,
     // for the studio modules (ext.js)
     regionImage: regionImage, openFile: openFile, pinOf: pinOf, srcPage: srcPage, rendered: function (i) { return rendered[i] !== undefined; }, fitZoom: fitZoom, setZoom: setZoom, layoutPagesKeep: function () { layoutPages(); }, drawBg: drawBg, markThumb: markThumb, push: push, changed: changed, setAsset: setAsset, uid: uid, born: born, goto: goto, toast: toast, busy: busy, popAt: popAt,
-    download: download, copyBlob: copyBlob, cropOf: cropOf, visibleTop: visibleTop, selObjs: selObjs, alignSel: alignSel, groupSel: groupSel, lockSel: lockSel, saveOpt: saveOpt, newBlank: newBlank, buildThumbs: buildThumbs, textHeight: textHeight, pageEl: pageEl, ptOf: ptOf, textSvgInner: textSvgInner, wrapText: wrapText, lhOf: lhOf, objInner: objInner, bbox: bbox, moveObj: moveObj };
+    download: download, copyBlob: copyBlob, cropOf: cropOf, visibleTop: visibleTop, selObjs: selObjs, alignSel: alignSel, groupSel: groupSel, lockSel: lockSel, saveOpt: saveOpt, newBlank: newBlank, buildThumbs: buildThumbs, textHeight: textHeight, pageEl: pageEl, ptOf: ptOf, textSvgInner: textSvgInner, wrapText: wrapText, lhOf: lhOf, objInner: objInner, bbox: bbox, moveObj: moveObj, addImage: addImageObj, freeY: freeY, visibleTop: visibleTop };
 })();

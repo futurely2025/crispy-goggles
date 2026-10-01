@@ -172,5 +172,28 @@
   function closeFind() { if (bar) { bar.hidden = true; var fi = $('findInp'); if (fi && document.activeElement === fi) fi.blur(); } hits = []; cur = -1; query = ''; runId++; redraw(); }
   function reset() { cache = {}; hits = []; cur = -1; query = ''; if (bar) { bar.hidden = true; $('findInp').value = ''; } }
 
-  window.PdfText = { onTool: onTool, onRender: onRender, onUnrender: onUnrender, marks: marks, openFind: openFind, closeFind: closeFind, search: search, reset: reset, hits: function () { return hits; }, norm: norm };
+
+  // all matches of a plain string or RegExp on every text page → [{i, pid, rects:[{x,y,w,h}], text}] (rects in page points)
+  // (used by "redact by search"; the text is the normalised page text, so Arabic marks and alef forms are ignored)
+  function findAll(pattern) {
+    var re = pattern instanceof RegExp ? new RegExp(pattern.source, pattern.flags.replace('g', '') + 'g') : null, nq = re ? null : norm(pattern).replace(/\s+/g, ' ').trim();
+    var out = [], chain = Promise.resolve();
+    S.pages.forEach(function (p, i) {
+      if (p.src < 0) return;
+      chain = chain.then(function () {
+        return pageText(p).then(function (t) {
+          var hay = t.text, idxs = [];
+          if (re) { var m; re.lastIndex = 0; while ((m = re.exec(hay))) { if (!m[0]) { re.lastIndex++; continue; } idxs.push([m.index, m[0].length]); } }
+          else if (nq.length >= 2) { var h2 = hay.replace(/\s+/g, ' '), cm = collapsedMap(hay), at = h2.indexOf(nq); while (at >= 0) { idxs.push([cm[at], (cm[at + nq.length - 1] - cm[at]) + 1]); at = h2.indexOf(nq, at + nq.length); } }
+          idxs.forEach(function (r) {
+            var a = t.map[r[0]], b = t.map[r[0] + r[1] - 1]; if (!a || !b) return;
+            out.push({ i: i, pid: p.id, rects: rectsOf({ i: i, pid: p.id, from: a, to: b }), text: hay.substr(r[0], r[1]) });
+          });
+        }).catch(function () { /* page without text */ });
+      });
+    });
+    return chain.then(function () { return out; });
+  }
+
+  window.PdfText = { findAll: findAll, pageText: pageText, rectsOf: rectsOf, onTool: onTool, onRender: onRender, onUnrender: onUnrender, marks: marks, openFind: openFind, closeFind: closeFind, search: search, reset: reset, hits: function () { return hits; }, norm: norm };
 })();
