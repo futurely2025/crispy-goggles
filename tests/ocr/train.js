@@ -1,0 +1,31 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright'); const fs = require('fs');
+const NE = +process.env.NE || 40, NW = +process.env.NW || 25, NO = +process.env.NO || 40, EP = +process.env.EP || 24, FINAL = process.env.FINAL === '1';
+(async () => {
+  const b = await chromium.launch(); const p = await b.newPage(); p.on('pageerror', e => console.log('PAGEERR', e.message));
+  await p.exposeFunction('log', s => console.log(s));
+  await p.goto('http://localhost:8765/pdf.html'); await p.waitForTimeout(800);
+  await p.addScriptTag({ url: '/js/pdf/ocr-digits.js?' + Date.now() }); await p.addScriptTag({ content: fs.readFileSync('trainlib.js', 'utf8') });
+  const res = await p.evaluate(async ([NE, NW, NO, EP, FINAL]) => {
+    const U = n => '/fonts/vector/' + n + '.ttf';
+    const web = [['Amiri', 'Amiri-400', 0], ['Amiri', 'Amiri-700', 1], ['Cairo', 'Cairo-400', 0], ['Cairo', 'Cairo-700', 1], ['NotoKufi', 'NotoKufiArabic-400', 0], ['NotoKufi', 'NotoKufiArabic-700', 1], ['NotoNaskh', 'NotoNaskhArabic-400', 0], ['NotoNaskh', 'NotoNaskhArabic-700', 1], ['Scheherazade', 'ScheherazadeNew-400', 0], ['Scheherazade', 'ScheherazadeNew-700', 1]].map(([fam, f, bold]) => ({ fam, url: U(f), bold: !!bold }));
+    const lat = [['Arimo', 'Arimo-R', 0, 0], ['Arimo', 'Arimo-B', 1, 0], ['Arimo', 'Arimo-I', 0, 1], ['Arimo', 'Arimo-BI', 1, 1], ['Tinos', 'Tinos-R', 0, 0], ['Tinos', 'Tinos-B', 1, 0], ['Tinos', 'Tinos-I', 0, 1], ['Tinos', 'Tinos-BI', 1, 1]].map(([fam, f, bold, italic]) => ({ fam, url: U(f), bold: !!bold, italic: !!italic }));
+    const sys = n => ({ fam: n }), sysb = n => ({ fam: n, bold: true });
+    const eastTrain = web.concat([sys('DejaVu Serif'), sysb('DejaVu Sans'), sys('FreeSans'), sys('FreeMono')]), eastVal = [sys('DejaVu Sans'), sys('FreeSerif')];
+    const westTrain = lat.concat(web, [sys('Liberation Sans'), sysb('Liberation Sans'), sys('DejaVu Serif'), sys('FreeSerif'), sys('FreeMono'), sys('Liberation Mono')]), westVal = [sys('Liberation Serif'), sys('FreeSans'), sys('DejaVu Sans')];
+    const oth = web.concat(lat.slice(0, 2), [sys('DejaVu Sans'), sys('FreeSerif')]);
+    const T = TL; const fe = await T.loadFonts(eastTrain.concat(eastVal, westTrain, westVal, oth));
+    const ok = new Set(fe.map(f => f.fam + f.bold + f.italic));
+    const keep = l => l.filter(f => ok.has(f.fam + f.bold + f.italic) || !f.url && true);
+    log('fonts loaded ' + fe.length);
+    T.seedIt(42);
+    const train = T.makeData(FINAL ? eastTrain.concat(eastVal) : eastTrain, FINAL ? westTrain.concat(westVal) : westTrain, FINAL ? oth : oth.slice(0, -1), NE, NW, NO); log('train samples ' + train.X.length);
+    T.seedIt(777); const val = T.makeData(eastVal, westVal, [sys('DejaVu Sans'), sys('FreeSerif')], 40, 25, 40); log('val samples ' + val.X.length);
+    const M = T.init(train.X[0].length, 160, 64, 22);
+    const t0 = Date.now();
+    T.train(M, train, EP, (ep, loss, v) => log('ep ' + ep + ' loss ' + loss.toFixed(4) + ' val ' + (v ? JSON.stringify({ acc: +v.acc.toFixed(3), east: +v.east.toFixed(3), west: +v.west.toFixed(3), other: +v.other.toFixed(3) }) : '') + ' ' + Math.round((Date.now() - t0) / 1000) + 's'), val);
+    const r = n => Array.from(n, x => Math.round(x * 10000) / 10000);
+    return { h1: M.h1, h2: M.h2, out: M.out, w1: r(M.w1), b1: r(M.b1), w2: r(M.w2), b2: r(M.b2), w3: r(M.w3), b3: r(M.b3) };
+  }, [NE, NW, NO, EP, FINAL]);
+  fs.writeFileSync(process.env.OUT || 'digits_model.json', JSON.stringify(res)); console.log('saved', JSON.stringify(res).length);
+  await b.close();
+})();

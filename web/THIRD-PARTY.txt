@@ -15,3 +15,6 @@ mammoth.js 1.13.0 (Word .docx to HTML for "Word to PDF", vendor/mammoth-docx) - 
 jsdiff 9.0.0 (text comparison in "Compare PDF", vendor/diff) - BSD 3-Clause - https://github.com/kpdecker/jsdiff
 qpdf (WebAssembly build @jspawn/qpdf-wasm 0.0.2: password protect / unlock, vendor/qpdf) - Apache License 2.0 - https://github.com/jsscheller/qpdf-wasm
 Tesseract.js 5 + tesseract.js-core 6 (OCR in the browser, vendor/tesseract) - Apache License 2.0 - https://github.com/naptha/tesseract.js ; language data ara / eng (tessdata_best_int) - Apache License 2.0
+tessdata_best float models ara / eng (vendor/tesseract/lang-best, used by the "accurate" OCR modes) - Apache License 2.0 - https://github.com/tesseract-ocr/tessdata_best
+Arabic word list for OCR spell repair (vendor/tesseract/ardict.txt.gz): words with frequency >= 25 from FrequencyWords (OpenSubtitles 2018, hermitdave) - CC BY-SA 4.0 - https://github.com/hermitdave/FrequencyWords ; plus a school vocabulary list written for this project
+OCR digit reader (vendor/tesseract/digits.json): a small neural network trained for this project on synthetic renderings of digits in SIL OFL / Apache / GPL-with-font-exception fonts (no third-party model data)

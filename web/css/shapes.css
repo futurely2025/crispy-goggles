@@ -113,3 +113,15 @@
 .cmdk-btn { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c6d4d7; background: #fff; border-radius: 8px; padding: 3px 9px; cursor: pointer; font: 600 12px "Segoe UI", Tahoma, sans-serif; color: #3b565c; }
 .cmdk-btn:hover { border-color: var(--tq); }
 @media (max-width: 760px) { .cmdk-btn span, .cmdk-btn kbd { display: none; } }
+
+/* OCR result dialog */
+.ocr-src { text-align: center; margin-bottom: 8px; } .ocr-src img { max-width: 100%; max-height: 160px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.ocr-stat { line-height: 1.8; }
+.ocr-rev { margin: 8px 0; padding: 8px 10px; border: 1px solid #f0e2a8; background: #fffbea; border-radius: 10px; max-height: 150px; overflow: auto; }
+.ocr-revh { font-weight: 700; font-size: 12.5px; margin-bottom: 6px; } .ocr-revh small { font-weight: 400; color: var(--muted); }
+.ocr-w { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 5px; }
+.ocr-w button { border: 1px solid #e0d28a; background: #fff; border-radius: 8px; padding: 2px 9px; cursor: pointer; font: inherit; font-size: 13.5px; }
+.ocr-w .ocr-wd { background: #fff3c4; } .ocr-w .ocr-wd i { font-style: normal; font-size: 10.5px; color: #b8860b; margin-inline-start: 6px; }
+.ocr-w .ocr-sg { border-color: #bfe3dd; background: #eefaf7; color: var(--tq-3); } .ocr-w .ocr-sg:hover { background: var(--tq-soft); }
+.ocr-w.done .ocr-wd { background: #dff3e6; } .ocr-w.done .ocr-wd i { display: none; }
+.ocr-opts { flex-wrap: wrap; gap: 6px; } .ocr-opts select { height: 30px; }

@@ -1,79 +1,126 @@
-/* PdfOcr — "نسخ نص (OCR)": drag a box over a scanned question (image PDF) and get its text (Arabic + English), in the browser.
- * Tesseract.js runs from vendor/tesseract (no network); the result can be copied or placed on the page as editable text. */
+/* PdfOcr — «نسخ نص (OCR)» in the studio: a region, the whole page or the whole file → editable Arabic/English text.
+ * The recognition itself lives in ocr-engine.js (image preparation, LSTM passes, voting, dictionary repair); this file is the interface:
+ * mode / language / digits choices, the original picture next to the text, a review list of doubtful words with suggestions,
+ * and insertion on the page as an editable text object. */
 (function () {
   'use strict';
-  var P = window.__pdf, S = P.S, UI = window.PdfUI, esc = UI.esc;
-  var base = (function () { var s = document.currentScript && document.currentScript.src; return s ? s.replace(/js\/pdf\/ocr\.js.*$/, '') : ''; })();
-  var worker = null, workerP = null, curLang = '';
+  var P = window.__pdf, S = P.S, UI = window.PdfUI, esc = UI.esc, E = window.PdfOcrEngine;
+  var KEY = 'armath.pdf.ocr';
+  var cfg = { mode: 'accurate', lang: 'auto', digits: 'keep' };
+  try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* ignore */ }
+  function saveCfg() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ } }
+  var running = false;
 
-  function loadScript(src) { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = function () { rej(new Error('تعذّر تحميل محرك التعرف على النص')); }; document.head.appendChild(s); }); }
-  function getWorker(langs) {
-    if (worker && curLang === langs) return Promise.resolve(worker);
-    if (workerP && curLang === langs) return workerP;
-    curLang = langs;
-    workerP = (window.Tesseract ? Promise.resolve() : loadScript(base + 'vendor/tesseract/tesseract.min.js?v=5')).then(function () {
-      if (worker) { try { worker.terminate(); } catch (e) { /* ignore */ } worker = null; }
-      return window.Tesseract.createWorker(langs.split('+'), 1, {
-        workerPath: base + 'vendor/tesseract/worker.min.js', corePath: base + 'vendor/tesseract/core', langPath: base + 'vendor/tesseract/lang',
-        gzip: true, workerBlobURL: false, cacheMethod: 'none',
-        logger: function (m) { if (m && m.status) { var pc = m.progress ? ' ' + Math.round(m.progress * 100) + '%' : ''; P.busy(true, (/recogni/.test(m.status) ? 'جارٍ التعرف على النص…' : 'تحضير محرك التعرف…') + pc); } }
-      });
-    }).then(function (w) { worker = w; return w; });
-    return workerP;
-  }
+  var MODE_NAMES = { fast: 'سريع', accurate: 'دقيق (موصى به)', max: 'أقصى دقة (أبطأ)' };
+  function sel(id, items, val) { return '<select id="' + id + '">' + items.map(function (it) { return '<option value="' + it[0] + '"' + (it[0] === val ? ' selected' : '') + '>' + it[1] + '</option>'; }).join('') + '</select>'; }
 
+  function status(msg) { P.busy(true, msg); }
+  /** crop a rendered page canvas to the region (points → pixels) */
   function crop(cv, r, sc) {
     var x = Math.max(0, Math.round(r.x * sc)), y = Math.max(0, Math.round(r.y * sc)), w = Math.min(cv.width - x, Math.round(r.w * sc)), h = Math.min(cv.height - y, Math.round(r.h * sc));
     var out = document.createElement('canvas'); out.width = Math.max(1, w); out.height = Math.max(1, h);
     var g = out.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, out.width, out.height); g.drawImage(cv, x, y, w, h, 0, 0, w, h);
-    // grayscale + gentle contrast stretch helps scans
-    var d = g.getImageData(0, 0, out.width, out.height), a = d.data, lo = 255, hi = 0, i;
-    for (i = 0; i < a.length; i += 4) { var l = (a[i] * 0.3 + a[i + 1] * 0.59 + a[i + 2] * 0.11) | 0; a[i] = a[i + 1] = a[i + 2] = l; if (l < lo) lo = l; if (l > hi) hi = l; }
-    if (hi - lo > 40) for (i = 0; i < a.length; i += 4) { var v = Math.max(0, Math.min(255, (a[i] - lo) * 255 / (hi - lo))); a[i] = a[i + 1] = a[i + 2] = v; }
-    g.putImageData(d, 0, 0);
     return out;
   }
-
-  function run(i, r) {
-    var p = S.pages[i];
-    if (r.w < 12 || r.h < 8) return P.toast('ارسم مستطيلاً أكبر حول النص المراد التعرف عليه');
-    var lang = (localStorage.getItem('armath.pdf.ocrlang') || 'ara+eng');
-    P.busy(true, 'تحضير محرك التعرف…');
-    // text size is unknown (a school book vs a poster): try two resolutions and keep the more confident reading
-    var big = Math.min(4.2, Math.max(1.5, 2400 / r.w)), small = Math.min(big, Math.max(1, 1000 / r.w)), scales = Math.abs(big - small) < 0.25 ? [big] : [small, big];
-    var best = null;
-    var chain = Promise.resolve();
-    scales.forEach(function (sc) {
-      chain = chain.then(function () {
-        return P.pageBitmap(i, sc).then(function (cv) {
-          var img = crop(cv, r, sc); cv.width = cv.height = 1;
-          return getWorker(lang).then(function (w) { return w.recognize(img); });
-        }).then(function (res) { if (!best || (res.data.confidence || 0) > (best.data.confidence || 0)) best = res; });
-      });
-    });
-    chain.then(function () { return { res: best }; }).then(function (o) {
-      P.busy(false);
-      var text = (o.res.data.text || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim(), conf = Math.round(o.res.data.confidence || 0);
-      if (!text) { P.toast('لم يُعثر على نص — جرّب تحديد منطقة أوضح أو أكبر', true); return; }
-      show(i, r, text, conf, lang);
-    }).catch(function (e) { P.busy(false); P.toast('تعذّر التعرف على النص: ' + (e && e.message ? e.message : e), true); if (window.ArLog) ArLog.error('ocr', e); });
+  function renderScale(r) { var sc = Math.min(4.6, Math.max(2, 2600 / Math.max(40, r.w))); while ((r.w * sc) * (r.h * sc) > 22e6 && sc > 1.2) sc *= 0.9; return sc; }
+  /** recognise one picture with the current settings (language "auto" is handled by the engine) */
+  function recognizeImage(img, over) {
+    var o = Object.assign({ mode: cfg.mode, digits: cfg.digits, lang: cfg.lang }, over || {});
+    o.onStatus = status;
+    o.onProgress = function (m) { if (m && m.status === 'recognizing text') status('جارٍ التعرف على النص… ' + Math.round((m.progress || 0) * 100) + '%'); else if (m && /load|init/.test(m.status)) status('تحضير محرك التعرف (أول مرة فقط)…'); };
+    return E.recognize(img, o);
   }
-  function show(i, r, text, conf, lang) {
+
+  // ================================================================ region / page
+  function run(i, r, over) {
+    if (running) return P.toast('عملية تعرّف جارية — انتظر انتهاءها');
+    if (r.w < 12 || r.h < 8) return P.toast('ارسم مستطيلاً أكبر حول النص المراد التعرف عليه');
+    if (!E) return P.toast('محرك التعرف غير متاح', true);
+    running = true; status('تحضير الصورة…');
+    var sc = renderScale(r), thumb = null;
+    P.pageBitmap(i, sc).then(function (cv) {
+      var img = crop(cv, r, sc); cv.width = cv.height = 1;
+      var t = document.createElement('canvas'), k = Math.min(1, 900 / img.width, 160 / img.height); t.width = Math.max(1, Math.round(img.width * k)); t.height = Math.max(1, Math.round(img.height * k)); t.getContext('2d').drawImage(img, 0, 0, t.width, t.height); thumb = img.height < img.width * 0.7 || img.width < 700 ? t.toDataURL('image/jpeg', 0.85) : null;
+      return recognizeImage(img, over);
+    }).then(function (res) {
+      running = false; P.busy(false);
+      if (!res.text.trim()) { P.toast('لم يُعثر على نص — جرّب تحديد منطقة أوضح أو أكبر، أو اختر «أقصى دقة»', true); return; }
+      show(i, r, res, thumb);
+    }).catch(function (e) { running = false; P.busy(false); P.toast('تعذّر التعرف على النص: ' + (e && e.message ? e.message : e), true); if (window.ArLog) ArLog.error('ocr', e); });
+  }
+  function runPage(i) {
+    if (!S.pdf) return P.toast('افتح ملف PDF أولاً');
+    i = i === undefined ? S.cur : i;
+    var c = P.cropOf(S.pages[i]); run(i, { x: c.x, y: c.y, w: c.w, h: c.h });
+  }
+
+  // ================================================================ review of doubtful words
+  function doubtful(res) {
+    var out = [], seen = {};
+    res.words.forEach(function (w) {
+      var t = (w.text || '').replace(/^[^ء-يa-zA-Z0-9]+|[^ء-يa-zA-Z0-9]+$/g, '');
+      if (t.length < 2 || w.conf >= 76 || seen[t]) return;
+      seen[t] = 1; out.push({ text: t, conf: Math.round(w.conf), alt: w.alt, fixed: w.fixed, orig: w.orig });
+    });
+    out.sort(function (a, b) { return a.conf - b.conf; });
+    return out.slice(0, 24);
+  }
+  function suggestions(w) {
+    var s = [];
+    if (w.alt) s.push(w.alt);
+    if (w.orig && w.orig !== w.text) s.push(w.orig);
+    if (/^[ء-ي]+$/.test(w.text) && E.candidates) {
+      var c = E.candidates(w.text), keys = Object.keys(c).filter(function (k) { return E.known(k); });
+      keys.sort(function (a, b) { return (c[a] * 3 + Math.log(2 + E.rank(a)) * 0.55) - (c[b] * 3 + Math.log(2 + E.rank(b)) * 0.55); });
+      keys.slice(0, 4).forEach(function (k) { if (s.indexOf(k) < 0) s.push(k); });
+    }
+    return s.filter(function (x) { return x !== w.text; }).slice(0, 4);
+  }
+  function replaceWord(ta, from, to) {
+    var v = ta.value, re = new RegExp('(^|[\\s،؛؟.,:;!()\\[\\]«»"\'])' + from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[\\s،؛؟.,:;!()\\[\\]«»"\'])'), m = re.exec(v);
+    if (!m) return false;
+    var at = m.index + m[1].length; ta.value = v.slice(0, at) + to + v.slice(at + from.length); ta.focus(); ta.setSelectionRange(at, at + to.length); return true;
+  }
+  function locate(ta, word) { var at = ta.value.indexOf(word); if (at >= 0) { ta.focus(); ta.setSelectionRange(at, at + word.length); var lh = parseFloat(getComputedStyle(ta).lineHeight) || 24, line = ta.value.slice(0, at).split('\n').length; ta.scrollTop = Math.max(0, (line - 2) * lh); } }
+
+  // ================================================================ result dialog
+  function show(i, r, res, thumb) {
+    var text = res.text, conf = Math.round(res.conf), dub = doubtful(res), fixes = res.lines.reduce(function (n, l) { return n + (l.fixes ? l.fixes.length : 0); }, 0), voted = res.lines.reduce(function (n, l) { return n + (l.voted || 0); }, 0);
+    var tone = conf >= 90 ? '#1f8a4c' : conf >= 75 ? '#b8860b' : '#c2352b';
     UI.open({
       title: 'النص المستخرج', wide: true, ok: 'إدراج كنص على الصفحة', body:
-        '<p class="dlg-note">دقة التعرف التقريبية: <b>' + conf + '%</b> — راجع النص وصحّحه قبل الاستخدام (الخطوط المشكّلة أو الصور الرديئة تقلّل الدقة).</p>' +
-        '<textarea id="ocrT" rows="9" dir="auto" style="font-size:16px;line-height:1.7">' + esc(text) + '</textarea>' +
-        '<div class="fld row"><span>اللغة</span><select id="ocrL"><option value="ara+eng"' + (lang === 'ara+eng' ? ' selected' : '') + '>عربي + إنجليزي</option><option value="ara"' + (lang === 'ara' ? ' selected' : '') + '>عربي فقط</option><option value="eng"' + (lang === 'eng' ? ' selected' : '') + '>إنجليزي فقط</option></select><button type="button" class="btn ghost" id="ocrAgain">إعادة التعرف</button></div>' +
+        (thumb ? '<div class="ocr-src"><img src="' + thumb + '" alt="المنطقة الأصلية"></div>' : '') +
+        '<p class="dlg-note ocr-stat"><b style="color:' + tone + '">الثقة ' + conf + '%</b> · ' + res.lines.length + ' سطر · ' + (dub.length ? dub.length + ' كلمة تحتاج مراجعة · ' : 'لا كلمات مشكوك فيها · ') +
+        (fixes ? 'صُحّحت ' + fixes + ' كلمة آلياً · ' : '') + (voted ? 'حُسمت ' + voted + ' كلمة بين عدة قراءات · ' : '') + (Math.abs(res.angle) >= 0.2 ? 'عُدّل ميل الصورة ' + res.angle.toFixed(1) + '° · ' : '') + (res.ms / 1000).toFixed(1) + ' ث</p>' +
+        '<textarea id="ocrT" rows="8" dir="auto" style="font-size:16px;line-height:1.7">' + esc(text) + '</textarea>' +
+        (dub.length ? '<div class="ocr-rev"><div class="ocr-revh">كلمات للمراجعة <small>— انقر الكلمة لتحديدها في النص، أو اختر تصحيحاً مقترحاً</small></div>' + dub.map(function (w, k) {
+          var sg = suggestions(w);
+          return '<div class="ocr-w" data-k="' + k + '"><button type="button" class="ocr-wd" data-a="go" title="تحديد في النص">' + esc(w.text) + '<i>' + w.conf + '%</i></button>' + sg.map(function (x) { return '<button type="button" class="ocr-sg" data-a="fix" data-t="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
+        }).join('') + '</div>' : '') +
+        '<div class="fld row ocr-opts"><span>الجودة</span>' + sel('ocrM', [['fast', MODE_NAMES.fast], ['accurate', MODE_NAMES.accurate], ['max', MODE_NAMES.max]], cfg.mode) +
+        '<span>اللغة</span>' + sel('ocrL', [['auto', 'تلقائي'], ['ara', 'عربي'], ['ara+eng', 'عربي + إنجليزي'], ['eng', 'إنجليزي']], cfg.lang) +
+        '<span>الأرقام</span>' + sel('ocrD', [['keep', 'كما هي'], ['western', '0 1 2 3'], ['indic', '٠ ١ ٢ ٣']], cfg.digits) +
+        '<button type="button" class="btn ghost" id="ocrAgain">↻ أعد التعرف</button></div>' +
         '<label class="chk"><input type="checkbox" id="ocrCover"> تغطية النص الأصلي بلون الخلفية عند الإدراج</label>',
-      extra: '<button type="button" class="btn" id="ocrCopy">⧉ نسخ النص</button>',
+      extra: '<button type="button" class="btn" id="ocrCopy">⧉ نسخ النص</button><button type="button" class="btn" id="ocrTxt">⬇ ملف txt</button>',
       onOpen: function (el, close) {
-        el.parentNode.querySelector('#ocrCopy').onclick = function () { var t = el.querySelector('#ocrT'); t.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ } if (!ok && navigator.clipboard) navigator.clipboard.writeText(t.value); P.toast('نُسخ النص'); };
-        el.querySelector('#ocrAgain').onclick = function () { try { localStorage.setItem('armath.pdf.ocrlang', el.querySelector('#ocrL').value); } catch (e) { /* ignore */ } close(null); run(i, r); };
+        var ta = el.querySelector('#ocrT'), box = el.parentNode;
+        box.querySelector('#ocrCopy').onclick = function () { ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ } if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value); P.toast('نُسخ النص'); };
+        box.querySelector('#ocrTxt').onclick = function () { P.download(new Blob(['﻿' + ta.value], { type: 'text/plain;charset=utf-8' }), (S.name || 'ocr').replace(/\.pdf$/i, '') + '-ocr.txt'); };
+        el.querySelector('#ocrAgain').onclick = function () { cfg.mode = el.querySelector('#ocrM').value; cfg.lang = el.querySelector('#ocrL').value; cfg.digits = el.querySelector('#ocrD').value; saveCfg(); close(null); run(i, r); };
+        [].forEach.call(el.querySelectorAll('.ocr-w'), function (row) {
+          var w = dub[+row.dataset.k];
+          row.onclick = function (e) {
+            var b = e.target.closest('button'); if (!b) return;
+            if (b.dataset.a === 'go') locate(ta, w.text);
+            else if (b.dataset.a === 'fix') { if (replaceWord(ta, w.text, b.dataset.t)) { w.text = b.dataset.t; row.classList.add('done'); b.parentNode.querySelector('.ocr-wd').firstChild.nodeValue = b.dataset.t; } else P.toast('لم أجد الكلمة في النص (ربما عُدّلت)'); }
+          };
+        });
       }
     }).then(function (el) {
       if (!el) return;
       var t = el.querySelector('#ocrT').value.trim(); if (!t) return;
-      var ar = (t.match(/[؀-ۿ]/g) || []).length > t.length / 4, lines = t.split('\n').length;
+      var ar = (t.match(/[؀-ۿ]/g) || []).length > t.length / 4, lines = t.split('\n').filter(function (x) { return x.trim(); }).length;
       var size = Math.max(9, Math.min(26, Math.round(r.h / Math.max(1, lines) * 0.62)));
       P.push();
       if (el.querySelector('#ocrCover').checked && window.PdfAnnot && PdfAnnot.coverRegion) PdfAnnot.coverRegion(i, r);
@@ -81,5 +128,45 @@
       o.h = P.textHeight(o); S.pages[i].objs.push(o); P.changed(); P.markThumb(i); P.drawOverlay(i); P.setTool('select'); P.select(i, o.id);
     });
   }
-  window.PdfOcr = { run: run };
+
+  // ================================================================ every page → one text
+  function runAll() {
+    if (!S.pdf) return P.toast('افتح ملف PDF أولاً');
+    if (running) return P.toast('عملية تعرّف جارية');
+    var n = S.pages.length, out = [], k = 0, t0 = Date.now();
+    UI.open({
+      title: 'استخراج نص كل الصفحات', ok: 'ابدأ', body: '<p class="dlg-note">يقرأ كل صفحة بمحرك التعرف الدقيق ويجمع النص كله في ملف واحد. الصفحات الكثيرة تستغرق وقتاً (نحو ' + (cfg.mode === 'max' ? '40' : cfg.mode === 'fast' ? '5' : '15') + ' ثانية للصفحة).</p>' +
+        '<div class="fld row"><span>الجودة</span>' + sel('oaM', [['fast', MODE_NAMES.fast], ['accurate', MODE_NAMES.accurate], ['max', MODE_NAMES.max]], cfg.mode) + '<span>اللغة</span>' + sel('oaL', [['auto', 'تلقائي'], ['ara', 'عربي'], ['ara+eng', 'عربي + إنجليزي'], ['eng', 'إنجليزي']], cfg.lang) + '</div>' +
+        '<div class="fld row"><span>الصفحات</span><input id="oaR" dir="ltr" placeholder="الكل — أو مثلاً 1-5, 8"></div>'
+    }).then(function (el) {
+      if (!el) return;
+      cfg.mode = el.querySelector('#oaM').value; cfg.lang = el.querySelector('#oaL').value; saveCfg();
+      var list = [], rg = el.querySelector('#oaR').value.trim();
+      if (rg) rg.split(/[,،]/).forEach(function (part) { var m = part.trim().match(/^(\d+)(?:\s*-\s*(\d+))?$/); if (m) { var a = +m[1], b = m[2] ? +m[2] : a; for (var q = a; q <= b; q++) if (q >= 1 && q <= n) list.push(q - 1); } });
+      else for (var q = 0; q < n; q++) list.push(q);
+      if (!list.length) return P.toast('نطاق الصفحات غير صحيح', true);
+      running = true; var cancelled = false;
+      function next() {
+        if (k >= list.length) {
+          running = false; P.busy(false);
+          var all = out.map(function (o) { return '── صفحة ' + (o.i + 1) + ' ──\n' + o.text; }).join('\n\n');
+          return UI.open({ title: 'تم استخراج النص (' + out.length + ' صفحة)', wide: true, ok: 'تنزيل txt', body: '<p class="dlg-note">' + out.length + ' صفحة في ' + Math.round((Date.now() - t0) / 1000) + ' ثانية — متوسط الثقة ' + Math.round(out.reduce(function (a, o) { return a + o.conf; }, 0) / Math.max(1, out.length)) + '%</p><textarea id="oaT" rows="14" dir="auto" style="font-size:15px;line-height:1.7">' + esc(all) + '</textarea>' })
+            .then(function (d) { if (d) P.download(new Blob(['﻿' + d.querySelector('#oaT').value], { type: 'text/plain;charset=utf-8' }), (S.name || 'ocr').replace(/\.pdf$/i, '') + '-ocr.txt'); });
+        }
+        var i = list[k], c = P.cropOf(S.pages[i]), sc = renderScale(c);
+        status('صفحة ' + (k + 1) + ' من ' + list.length + '…');
+        return P.pageBitmap(i, sc).then(function (cv) { var img = crop(cv, c, sc); cv.width = cv.height = 1; return recognizeImage(img); }).then(function (res) { out.push({ i: i, text: res.text, conf: res.conf }); k++; return next(); });
+      }
+      next().catch(function (e) { running = false; P.busy(false); P.toast('توقّف الاستخراج: ' + (e && e.message ? e.message : e), true); });
+    });
+  }
+
+  window.PdfOcr = { run: run, runPage: runPage, runAll: runAll, config: cfg };
+  // ribbon entry points (buttons are in pdf.html)
+  function hook() {
+    var b1 = document.getElementById('ocrPageBtn'), b2 = document.getElementById('ocrAllBtn');
+    if (b1) b1.onclick = function () { runPage(); };
+    if (b2) b2.onclick = runAll;
+  }
+  hook();
 })();
