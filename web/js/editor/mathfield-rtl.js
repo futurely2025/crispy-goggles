@@ -65,9 +65,14 @@
       }
       if (el.textContent !== t) el.textContent = t;
     });
-    // selection / highlight overlays are positioned in unmirrored coordinates: mirror them
+    // MathLive draws the selection box from rectangles it measured *before* this layer joined the Arabic letters and
+    // flipped them (the widths change), so in text such as \text{مجموع} the box landed elsewhere. Draw our own box from
+    // what is actually on screen instead; the container highlight is only mirrored.
+    Array.prototype.forEach.call(content.querySelectorAll('.rtl-sel'), function (el) { el.remove(); });
     var w = content.offsetWidth;
-    Array.prototype.forEach.call(content.querySelectorAll('.ML__contains-highlight, .ML__selection'), function (el) {
+    var mlSel = content.querySelectorAll('.ML__selection');
+    Array.prototype.forEach.call(mlSel, function (el) { el.style.visibility = on ? 'hidden' : ''; });
+    Array.prototype.forEach.call(content.querySelectorAll('.ML__contains-highlight'), function (el) {
       if (!on) return;
       var left = parseFloat(el.style.left), width = parseFloat(el.style.width);
       if (isNaN(left) || isNaN(width)) return;
@@ -77,7 +82,44 @@
       el.style.left = nl + 'px';
       el.dataset.rtlKey = nl + '|' + width + '|' + w;
     });
+    if (on && mlSel.length) drawSelection(content, mlSel[0]);
   }
+
+  // one box per row (and per run of neighbouring atoms) over the atoms MathLive marked as selected
+  function drawSelection(content, model) {
+    var all = content.querySelectorAll('.ML__selected'), els = [], i;
+    for (i = 0; i < all.length; i++) {
+      var up = all[i].parentElement, nested = false;
+      while (up && up !== content) { if (up.classList && up.classList.contains('ML__selected')) { nested = true; break; } up = up.parentElement; }
+      if (!nested) els.push(all[i]);
+    }
+    var cr = content.getBoundingClientRect(), cw = content.offsetWidth;
+    var rects = els.map(function (e) { return e.getBoundingClientRect(); }).filter(function (r) { return r.width > 0 && r.height > 0; });
+    if (!rects.length) return;
+    rects.sort(function (a, b) { return a.left - b.left; });
+    var boxes = [];
+    rects.forEach(function (r) {
+      for (var j = 0; j < boxes.length; j++) {
+        var q = boxes[j], mid = (r.top + r.bottom) / 2;
+        if (mid > q.t && mid < q.b && r.left - q.r < 14) {   // same row, neighbouring: grow the box
+          q.r = Math.max(q.r, r.right); q.t = Math.min(q.t, r.top); q.b = Math.max(q.b, r.bottom);
+          return;
+        }
+      }
+      boxes.push({ l: r.left, r: r.right, t: r.top, b: r.bottom });
+    });
+    var color = getComputedStyle(model).backgroundColor;
+    boxes.forEach(function (q) {
+      var d = document.createElement('div');
+      d.className = 'rtl-sel';
+      // the content is mirrored about its own centre: screen x → local x = right edge - x
+      var localLeft = (cr.left + cw) - q.r;
+      d.style.cssText = 'position:absolute;pointer-events:none;z-index:-1;left:' + localLeft + 'px;top:' + (q.t - cr.top - 1) +
+        'px;width:' + (q.r - q.l) + 'px;height:' + (q.b - q.t + 2) + 'px;background:' + color + ';';
+      content.insertBefore(d, content.firstChild);
+    });
+  }
+
 
 
   // ------------------------------------------------------------ pointer (click / drag / double-click) in RTL
