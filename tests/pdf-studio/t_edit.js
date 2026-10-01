@@ -1,0 +1,22 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright'); const fs = require('fs');
+(async () => {
+  const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1500, height: 950 } });
+  p.on('pageerror', e => console.log('PAGEERR', e.message));
+  p.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|Failed to load/.test(m.text())) console.log('CONSOLE', m.text().slice(0, 250)); });
+  await p.route(/appsforoffice|googleapis|gstatic/, r => r.abort());
+  await p.goto('http://localhost:8765/pdf.html'); await p.waitForTimeout(1500);
+  await p.setInputFiles('#fileInp', 'fx/b.pdf'); await p.waitForSelector('.page svg.ov'); await p.waitForTimeout(1500);
+  await p.evaluate(() => window.__pdf.setZoom(0.8)); await p.waitForTimeout(500);
+  const R = async () => p.evaluate(() => { const r = document.querySelector('.page svg.ov').getBoundingClientRect(); return { x: r.left, y: r.top, k: r.width / window.__pdf.S.pages[0].w }; });
+  await p.locator('#tools [data-tool=edittext]').click(); const r = await R();
+  await p.mouse.click(r.x + 90 * r.k, r.y + 78 * r.k); await p.waitForTimeout(900);
+  console.log('dialog', await p.locator('.dlg').count());
+  await p.locator('.dlg [data-a=ok]').click(); await p.waitForTimeout(500);
+  console.log('objs', await p.evaluate(() => JSON.stringify(window.__pdf.S.pages[0].objs.map(o => o.t + (o.text && typeof o.text === 'string' ? ':' + o.text : '')))));
+  console.log('textarea', await p.locator('textarea.tedit').count());
+  await p.keyboard.press('Control+a'); await p.keyboard.type('Edited heading'); await p.keyboard.press('Control+Enter'); await p.waitForTimeout(400);
+  await p.screenshot({ path: 'e1.png' });
+  await p.evaluate(() => { window.__pdf.exportDialog(); }); await p.waitForTimeout(500);
+  const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 90000 }), p.locator('.dlg [data-a=ok]').click()]); await dl.saveAs('fx/edit_out.pdf'); console.log('saved');
+  await b.close();
+})();

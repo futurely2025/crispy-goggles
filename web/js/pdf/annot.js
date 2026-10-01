@@ -485,7 +485,7 @@
     each(document.querySelectorAll('.stabs [data-st]'), function (t) { t.setAttribute('aria-pressed', String(t.dataset.st === id)); });
     $('thumbs').hidden = true; $('clipsPanel').hidden = true; document.querySelector('.pmain').classList.remove('wide'); document.querySelector('.pmain').classList.add('wide2');
     Object.keys(panels).forEach(function (k) { panels[k].el.hidden = k !== id; });
-    if (id === 'comments') renderComments(); else if (id === 'bmarks') renderBookmarks();
+    if (id === 'comments') renderComments(); else if (id === 'bmarks') renderBookmarks(); else if (id === 'layers') renderLayers();
   }
   function renderComments() {
     var el = panels.comments && panels.comments.el; if (!el) return;
@@ -503,6 +503,27 @@
       b.onclick = function () { P.goto(r.i); P.setTool('select'); P.select(r.i, r.o.id); };
       b.ondblclick = function () { dbl(r.i, r.o); };
       el.appendChild(b);
+    });
+  }
+  var LN = { text: 'نص', ink: 'رسم حر', rect: 'مستطيل', ellipse: 'بيضاوي', line: 'خط', arrow: 'سهم', white: 'تغطية', svg: 'معادلة/شكل', image: 'صورة', note: 'ملاحظة', shape: 'شكل', mark: 'تظليل', redact: 'تنقيح', link: 'رابط', field: 'حقل' };
+  function renderLayers() {
+    var el = panels.layers && panels.layers.el; if (!el || !S.pdf) return;
+    var p = S.pages[S.cur], list = p.objs;
+    el.innerHTML = '<div class="aph">طبقات الصفحة ' + (S.cur + 1) + ' <b>' + list.length + '</b></div>' + (list.length ? '' : '<p class="apn">لا توجد عناصر في هذه الصفحة.</p>');
+    list.slice().reverse().forEach(function (o) {
+      var k = list.indexOf(o), row = document.createElement('div'); row.className = 'apr bm lyr' + (S.sel && S.sel.ids && S.sel.ids.indexOf(o.id) >= 0 ? ' on' : '') + (o.hide ? ' off' : '');
+      var nm = o.name || (o.t === 'shape' ? (o.text && o.text.s ? o.text.s.slice(0, 24) : (o.kind || 'شكل')) : o.t === 'text' ? String(o.text || '').slice(0, 24) : (LN[o.t] || o.t));
+      row.innerHTML = '<span class="bmt"><b>' + esc(nm) + '</b><small>' + (LN[o.t] || o.t) + '</small></span><span class="bmc"><button type="button" data-a="eye" title="إظهار/إخفاء">' + (o.hide ? '🚫' : '👁') + '</button><button type="button" data-a="lock" title="قفل">' + (o.lock ? '🔒' : '🔓') + '</button><button type="button" data-a="up" title="للأمام">▲</button><button type="button" data-a="dn" title="للخلف">▼</button><button type="button" data-a="ren" title="تسمية">✎</button></span>';
+      row.querySelector('.bmt').onclick = function () { if (!o.hide) { P.setTool('select'); P.select(S.cur, o.id); } };
+      row.querySelector('.bmc').onclick = function (e) {
+        var a = e.target.dataset.a; if (!a) return;
+        if (a === 'ren') { UI.open({ title: 'اسم الطبقة', body: '<input id="ln" dir="auto" value="' + esc(nm) + '">', ok: 'حفظ' }).then(function (d) { if (d) { P.push(); o.name = d.querySelector('#ln').value.trim(); P.changed(); renderLayers(); } }); return; }
+        P.push();
+        if (a === 'eye') { if (o.hide) delete o.hide; else o.hide = true; } else if (a === 'lock') { if (o.lock) delete o.lock; else o.lock = true; }
+        else if (a === 'up' && k < list.length - 1) { list.splice(k, 1); list.splice(k + 1, 0, o); } else if (a === 'dn' && k > 0) { list.splice(k, 1); list.splice(k - 1, 0, o); }
+        P.changed(); P.drawOverlay(S.cur); renderLayers();
+      };
+      el.appendChild(row);
     });
   }
   function bms() { deco().bookmarks = deco().bookmarks || []; return deco().bookmarks; }
@@ -561,7 +582,8 @@
       btn('id="propsBtn"', 'ⓘ', 'خصائص المستند') + btn('id="bmBtn"', '🔖', 'الإشارات المرجعية') + btn('id="wmBtn"', '💧', 'علامة مائية') + btn('id="numBtn"', '🔢', 'ترقيم الصفحات') + sep +
       '<a class="rtlink" href="tools/protect.html" title="تشفير الملف بكلمة مرور"><i>🔒</i><b>حماية بكلمة مرور</b></a><a class="rtlink" href="tools/compress.html"><i>⇲</i><b>ضغط</b></a><a class="rtlink" href="tools/compare.html"><i>⇆</i><b>مقارنة</b></a>');
     var meas = nav('toolsMeasure',
-      btn('data-tool="select"', '⬚', 'تحديد') + sep + btn('data-meas="measureDist"', '📏', 'قياس مسافة', 'اسحب بين نقطتين') + btn('data-meas="measurePoly"', '⌇', 'قياس محيط', 'انقر نقاطاً، نقرتان للإنهاء') + btn('data-meas="measureArea"', '⬠', 'قياس مساحة', 'انقر رؤوس المضلع، نقرتان للإنهاء') + sep + btn('id="calBtn"', '⚖', 'معايرة المقياس', 'اضبط وحدة وقيمة المقياس'));
+      btn('data-tool="select"', '⬚', 'تحديد') + sep + btn('data-meas="measureDist"', '📏', 'قياس مسافة', 'اسحب بين نقطتين') + btn('data-meas="measurePoly"', '⌇', 'قياس محيط', 'انقر نقاطاً، نقرتان للإنهاء') + btn('data-meas="measureArea"', '⬠', 'قياس مساحة', 'انقر رؤوس المضلع، نقرتان للإنهاء') + sep + btn('id="calBtn"', '⚖', 'معايرة المقياس', 'اضبط وحدة وقيمة المقياس') + sep +
+      '<button id="gridBtn" aria-pressed="false" title="إظهار الشبكة والمحاذاة إليها"><i>▦</i><b>شبكة</b></button>' + btn('id="gridStepBtn"', '⌗', 'حجم الشبكة', 'المسافة بين خطوط الشبكة') + btn('id="layersBtn"', '☰', 'لوحة الطبقات', 'إظهار/إخفاء/قفل/ترتيب عناصر الصفحة'));
     // tab switching
     var navs = { base: host, comment: comment, forms: forms, protect: prot, measure: meas };
     function rtab(t) { each(tabs.querySelectorAll('[data-rt]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.rt === t)); }); Object.keys(navs).forEach(function (k) { navs[k].hidden = k !== t; }); try { localStorage.setItem('armath.pdf.rt', t); } catch (e) { /* ignore */ } }
@@ -579,7 +601,17 @@
     $('wmBtn').onclick = function () { var b = document.querySelector('#setPop [data-x="wm"]'); b && b.click(); }; $('numBtn').onclick = function () { var b = document.querySelector('#setPop [data-x="num"]'); b && b.click(); };
     each(document.querySelectorAll('[data-meas]'), function (b) { b.onclick = function () { if (!S.pdf) return P.toast('افتح ملف PDF أولاً'); S.shapeKind = b.dataset.meas; P.setTool('shape'); P.toast('ارسم على الصفحة' + (/Poly|Area/.test(b.dataset.meas) ? ' — انقر لإضافة نقاط ونقرتان للإنهاء' : '')); }; });
     $('calBtn').onclick = calibrate;
-    makePanel('comments', 'التعليقات <span class="cnt" id="cmtCount"></span>'); makePanel('bmarks', 'الإشارات');
+    document.addEventListener('pointerup', function () { setTimeout(function () { if (panels.layers && !panels.layers.el.hidden) renderLayers(); }, 60); }); document.addEventListener('keyup', function () { if (panels.layers && !panels.layers.el.hidden) renderLayers(); });
+    $('layersBtn').onclick = function () { openPanel('layers'); };
+    var gb = $('gridBtn'); gb.setAttribute('aria-pressed', String(!!S.opt.grid));
+    gb.onclick = function () { S.opt.grid = !S.opt.grid; this.setAttribute('aria-pressed', String(!!S.opt.grid)); try { localStorage.setItem('armath.pdf.look', JSON.stringify(S.opt)); } catch (e) { /* ignore */ } S.pages.forEach(function (p, i) { P.drawOverlay(i); }); P.toast(S.opt.grid ? 'الشبكة مفعّلة — تُحاذى العناصر أثناء السحب' : 'الشبكة متوقفة'); };
+    $('gridStepBtn').onclick = function () {
+      UI.open({ title: 'الشبكة', body: '<label class="fld"><span>المسافة بين الخطوط (نقطة)</span><input id="gs" type="number" min="2" max="200" dir="ltr" value="' + (S.opt.gridStep || 10) + '"></label><label class="fld row"><span>المحاذاة للشبكة أثناء السحب</span><input id="gn" type="checkbox"' + (S.opt.gridSnap !== false ? ' checked' : '') + '></label>', ok: 'حفظ' }).then(function (el) {
+        if (!el) return; S.opt.gridStep = Math.max(2, +el.querySelector('#gs').value || 10); S.opt.gridSnap = el.querySelector('#gn').checked; S.opt.grid = true; gb.setAttribute('aria-pressed', 'true');
+        try { localStorage.setItem('armath.pdf.look', JSON.stringify(S.opt)); } catch (e) { /* ignore */ } S.pages.forEach(function (p, i) { P.drawOverlay(i); });
+      });
+    };
+    makePanel('comments', 'التعليقات <span class="cnt" id="cmtCount"></span>'); makePanel('bmarks', 'الإشارات'); makePanel('layers', 'الطبقات');
     var saved = null; try { saved = localStorage.getItem('armath.pdf.rt'); } catch (e) { /* ignore */ }
     if (saved && navs[saved]) rtab(saved);
   }

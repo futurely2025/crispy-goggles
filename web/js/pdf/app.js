@@ -395,7 +395,7 @@
   }
   // the page's additions painted on its thumbnail (fonts are not needed at that size)
   function thumbAdds(i, cv, k) {
-    var p = S.pages[i], list = p.objs.filter(function (o) { return !(S.preview && o.sol) && o.t !== 'note'; }), deco = window.PdfDecor ? PdfDecor.page(p, i, S, false) : '';
+    var p = S.pages[i], list = p.objs.filter(function (o) { return !(S.preview && o.sol) && !o.hide && o.t !== 'note'; }), deco = window.PdfDecor ? PdfDecor.page(p, i, S, false) : '';
     if (!list.length && !deco) return Promise.resolve();
     var c = cropOf(p);
     var svg = '<svg xmlns="' + SVGNS + '" width="' + f2(p.w) + '" height="' + f2(p.h) + '" viewBox="0 0 ' + f2(p.w) + ' ' + f2(p.h) + '">' + deco + list.map(function (o) { return objInner(o, true); }).join('') + '</svg>';
@@ -665,8 +665,9 @@
     var el = pageEl(i); if (!el) return;
     var p = S.pages[i], sv = el.querySelector('svg.ov'), out = '';
     el.classList.toggle('hidepg', !!(S.preview && p.sol));
+    if (S.opt.grid) { var gs = S.opt.gridStep || 10; out += '<defs><pattern id="gp' + i + '" width="' + gs + '" height="' + gs + '" patternUnits="userSpaceOnUse"><path d="M' + gs + ' 0H0V' + gs + '" fill="none" stroke="#2f6fed" stroke-opacity=".28" stroke-width="' + f2(0.5 / Math.max(.5, S.zoom) + .2) + '"/></pattern></defs><rect x="0" y="0" width="' + f2(p.w) + '" height="' + f2(p.h) + '" fill="url(#gp' + i + ')" pointer-events="none"/>'; }
     p.objs.forEach(function (o) {
-      if (S.preview && o.sol) return;
+      if ((S.preview && o.sol) || o.hide) return;
       out += '<g data-id="' + o.id + '"' + (o.lock ? ' class="locked"' : '') + '>' + objInner(o) + (o.t === 'ink' || o.t === 'line' || o.t === 'arrow' ? hitPath(o) : '') + '</g>';
     });
     var list = S.sel && S.sel.page === i ? selObjs() : [];
@@ -936,6 +937,11 @@
     var bx = best(mine(b.x + dx, b.w), xs), by = best(mine(b.y + dy, b.h), ys), lines = [];
     if (bx) { dx += bx.d; lines.push({ v: bx.at }); }
     if (by) { dy += by.d; lines.push({ h: by.at }); }
+    if (S.opt.grid && S.opt.gridSnap !== false) {
+      var gs = S.opt.gridStep || 10;
+      if (!bx) dx += Math.round((b.x + dx) / gs) * gs - (b.x + dx);
+      if (!by) dy += Math.round((b.y + dy) / gs) * gs - (b.y + dy);
+    }
     return { dx: dx, dy: dy, lines: lines };
   }
   function moveObj(o, g, dx, dy) {
@@ -1242,7 +1248,7 @@
     }).then(function () { return drawBgImage(i, cx, sc); }).then(function () { return cv; });
   }
   function overlayImage(i, objsOnly) {
-    var p = S.pages[i], list = (objsOnly || p.objs).filter(function (o) { return !(S.preview && o.sol) && o.t !== 'note'; });
+    var p = S.pages[i], list = (objsOnly || p.objs).filter(function (o) { return !(S.preview && o.sol) && !o.hide && o.t !== 'note'; });
     if (!list.length) return Promise.resolve(null);
     var svg = '<svg xmlns="' + SVGNS + '" width="' + f2(p.w) + '" height="' + f2(p.h) + '" viewBox="0 0 ' + f2(p.w) + ' ' + f2(p.h) + '">' + list.map(function (o) { return objInner(o, true); }).join('') + '</svg>';
     // texts become outlines first so the picture never depends on fonts
@@ -1893,7 +1899,7 @@
       chain = Vector.fromSVG(bg).catch(function () { return bg; }).then(function (svg) { return Svg2Pdf.draw(svg, { x: 0, y: 0, w: p.w, h: p.h }, toPdf, env); }).then(function (ops) { all += ops; });
     }
     objs.forEach(function (o) {
-      if (o.t === 'note' && !o.show) return;
+      if ((o.t === 'note' && !o.show) || o.hide) return;
       chain = chain.then(function () {
         var b = { x: 0, y: 0, w: p.w, h: p.h }, svgP;
         if (o.t === 'svg') { svgP = Promise.resolve(lookSvg(o)); b = { x: o.x, y: o.y, w: o.w, h: o.h }; }

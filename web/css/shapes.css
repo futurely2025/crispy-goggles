@@ -95,3 +95,5 @@
 .iempty .ibtn { display: inline-block; min-width: 150px; height: auto; padding: 8px 14px; white-space: nowrap; border-radius: 9px; }
 
 .tool-edittext .ov { cursor: text; }
+
+.apr.lyr.on { border-color: var(--tq); background: #eef8f8; } .apr.lyr.off .bmt { opacity: .45; text-decoration: line-through; }
