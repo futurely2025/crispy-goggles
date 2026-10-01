@@ -357,6 +357,8 @@
   // ---- voting between passes (ROVER-like): every word of the best reading may be replaced by a better-supported word at the same place
   function nb(b, k) { return b ? { x0: b.x0 / k, y0: b.y0 / k, x1: b.x1 / k, y1: b.y1 / k } : null; }
   function ov(a0, a1, b0, b1) { return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0)); }
+  /** spellings that differ only by ة/ه, ى/ي or hamza forms are not OCR evidence: keep the reference reading */
+  function orthoKey(t) { return (t || '').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[أإآٱ]/g, 'ا'); }
   function wordScore(w) {
     var core = (w.text || '').replace(/[^ء-ي]/g, ''), s = w.conf || 0;
     if (core.length >= 3 && dict && dict.size) s += lookup(core) >= 0 ? 14 - Math.min(6, Math.log(2 + rankOf(core)) * 0.5) : -12;
@@ -383,7 +385,7 @@
             l.words.forEach(function (w) {
               if (!w.nbox) return;
               var ox = ov(rw.nbox.x0, rw.nbox.x1, w.nbox.x0, w.nbox.x1), uw = Math.max(rw.nbox.x1, w.nbox.x1) - Math.min(rw.nbox.x0, w.nbox.x0);
-              if (ox / uw > 0.45 && w.text !== rw.text) { var sc = wordScore(w); if (sc > bs + 6) { bs = sc; best = w; } }
+              if (ox / uw > 0.45 && w.text !== rw.text && orthoKey(w.text) !== orthoKey(rw.text)) { var sc = wordScore(w); if (sc > bs + 6) { bs = sc; best = w; } }
             });
           });
           if (best !== rw) changed++;
@@ -441,7 +443,7 @@
   }
   function known(w) { return !dict || !dict.size || lookup(w) >= 0; }
   // letters that differ only by dots / small marks — the usual OCR confusions
-  var CONF = { 'ب': 'تثنيئ', 'ت': 'بثنيئة', 'ث': 'بتنيئ', 'ن': 'بتثيئ', 'ي': 'بتثنئى', 'ئ': 'بتثنيى', 'ى': 'يئا', 'ج': 'حخ', 'ح': 'جخ', 'خ': 'جح', 'د': 'ذ', 'ذ': 'د', 'ر': 'ز', 'ز': 'ر', 'س': 'ش', 'ش': 'س', 'ص': 'ض', 'ض': 'ص', 'ط': 'ظ', 'ظ': 'ط', 'ع': 'غ', 'غ': 'ع', 'ف': 'ق', 'ق': 'ف', 'ا': 'أإآل', 'أ': 'اإآ', 'إ': 'اأآ', 'آ': 'اأإ', 'ه': 'ة', 'ة': 'هت', 'و': 'ؤز', 'ؤ': 'و', 'ل': 'ا', 'ك': 'ل', 'م': 'ه' };
+  var CONF = { 'ب': 'تثنيئ', 'ت': 'بثنيئة', 'ث': 'بتنيئ', 'ن': 'بتثيئ', 'ي': 'بتثنئى', 'ئ': 'بتثنيى', 'ى': 'يئا', 'ج': 'حخ', 'ح': 'جخ', 'خ': 'جح', 'د': 'ذ', 'ذ': 'د', 'ر': 'ز', 'ز': 'ر', 'س': 'ش', 'ش': 'س', 'ص': 'ض', 'ض': 'ص', 'ط': 'ظ', 'ظ': 'ط', 'ع': 'غ', 'غ': 'ع', 'ف': 'ق', 'ق': 'ف', 'ا': 'أإآل', 'أ': 'اإآ', 'إ': 'اأآ', 'آ': 'اأإ', 'ه': '', 'ة': 'ت', 'و': 'ؤز', 'ؤ': 'و', 'ل': 'ا', 'ك': 'ل', 'م': 'ه' };
   function candidates(w) {
     var out = {}, i, j, c, L = w.length, alts;
     function add(s, cost) { if (s !== w && (out[s] === undefined || out[s] > cost)) out[s] = cost; }
@@ -474,6 +476,7 @@
     t = t.replace(/\s+([،؛؟.,:!)\]])/g, '$1').replace(/([(\[])\s+/g, '$1');
     t = t.replace(/([،؛؟,!])(?=[^\s\d)\]،؛؟.,!:"'»])/g, '$1 ');
     t = t.replace(/([ء-ي])\.(?=[ء-ي])/g, '$1. ');
+    t = t.replace(/([0-9٠-٩])(?=[\u0621-\u064A])/g, '$1 ').replace(/([\u0621-\u064A])(?=[0-9٠-٩])/g, '$1 ');
     t = t.replace(/[ \t]{2,}/g, function (m) { return m.length > 4 ? m : ' '; }).replace(/^\s+|\s+$/g, '');
     return t;
   }
