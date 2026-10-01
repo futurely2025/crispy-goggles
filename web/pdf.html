@@ -11,7 +11,8 @@
   <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
   <link rel="stylesheet" href="css/brand.css?v=5.0.0">
   <link rel="stylesheet" href="css/studio.css?v=5.0.0">
-  <link rel="stylesheet" href="css/pdf.css?v=5.3.0">
+  <link rel="stylesheet" href="css/pdf.css?v=5.9.0">
+  <link rel="stylesheet" href="css/shapes.css?v=5.9.0">
   <script src="js/core/logger.js?v=5.7.0"></script>
   <script src="js/i18n.js?v=5.8.1"></script>
   <script src="js/core/render-host.js?v=5.7.0"></script>
@@ -20,7 +21,7 @@
   <script src="js/figures/registry.js?v=5.0.0"></script>
   <script src="js/core/vector.js?v=5.4.0"></script>
   <script src="js/pdf/compose.js?v=5.0.1"></script>
-  <script src="js/pdf/svg2pdf.js?v=5.1.0"></script>
+  <script src="js/pdf/svg2pdf.js?v=5.9.0"></script>
   <script src="js/pdf/ui.js?v=5.1.0"></script>
   <script src="js/pdf/decor.js?v=5.1.0"></script>
   <script src="js/pdf/stamps.js?v=5.1.0"></script>
@@ -46,6 +47,7 @@
       <button class="tb" id="fitW" title="ملاءمة العرض">↔</button>
       <button class="tb" id="fitP" title="ملاءمة الصفحة كاملة">▯</button>
       <span class="sep"></span>
+      <button class="tb" id="inspBtn" aria-pressed="true" title="لوحة الخصائص: تعبئة وخط وظل وحجم ونص للشكل المحدد">◧</button>
       <button class="tb" id="findBtn" title="بحث في نص الملف (Ctrl+F)">🔍</button>
       <button class="tb" id="printBtn" title="طباعة (Ctrl+P)">🖨</button>
       <span class="sep"></span>
@@ -63,6 +65,7 @@
     <button data-tool="text" title="نص (T)"><i>T</i><b>نص</b></button>
     <button data-tool="pen" title="قلم حر (P)"><i>✎</i><b>قلم</b></button>
     <button data-tool="hl" title="تظليل (Y)"><i>▬</i><b>تظليل</b></button>
+    <button class="act" id="shapeBtn" title="معرض الأشكال: أكثر من 180 شكلاً (أسهم، مخططات، نجوم، فقاعات، رموز رياضية وعلمية…)"><i>◇</i><b>الأشكال ▾</b></button>
     <button data-tool="rect" title="مستطيل (R)"><i>▭</i><b>مستطيل</b></button>
     <button data-tool="ellipse" title="دائرة (O)"><i>◯</i><b>دائرة</b></button>
     <button data-tool="line" title="خط (L)"><i>╱</i><b>خط</b></button>
@@ -238,7 +241,9 @@
     window.pdfjsLib = pdfjs;
     window.dispatchEvent(new Event('pdfjs-ready'));
   </script>
-  <script src="js/pdf/app.js?v=5.7.0"></script>
+  <script src="js/pdf/app.js?v=5.9.0"></script>
+  <script src="js/pdf/shapes-lib.js?v=5.9.0"></script>
+  <script src="js/pdf/shapes.js?v=5.9.0"></script>
   <script src="js/pdf/ext.js?v=5.3.0"></script>
   <script src="js/pdf/textfind.js?v=5.3.0"></script>
 </body>

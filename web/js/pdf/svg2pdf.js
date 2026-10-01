@@ -160,6 +160,7 @@
     return '';
   }
 
+  var shadingCounter = 0;
   var INHERIT = ['fill', 'fill-opacity', 'fill-rule', 'stroke', 'stroke-width', 'stroke-opacity', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'stroke-miterlimit', 'clip-rule'];
   function styleOf(el, parent) {
     var st = Object.assign({}, parent);
@@ -188,6 +189,39 @@
         gs[key] = env.page.node.newExtGState('GSam', ref).toString();
       }
       return gs[key];
+    };
+    // gradients → PDF shading dictionaries (axial / radial) with a stitched colour function; used by `sh` after a clip
+    var shadings = {};
+    var shadingFor = function (id) {
+      if (shadings[id] !== undefined) return shadings[id];
+      shadings[id] = null;
+      var g = root.querySelector('[id="' + id + '"]');
+      if (!g || !/^(linear|radial)Gradient$/.test(g.localName)) return null;
+      var stops = Array.prototype.map.call(g.querySelectorAll('stop'), function (st) {
+        var off = parseFloat((st.getAttribute('offset') || '0').replace('%', '')); if (/%/.test(st.getAttribute('offset') || '')) off /= 100;
+        return { o: Math.max(0, Math.min(1, isNaN(off) ? 0 : off)), c: color(st.getAttribute('stop-color') || (st.getAttribute('style') || '').replace(/.*stop-color:\s*([^;]+).*/, '$1'), root) || { r: 0, g: 0, b: 0 } };
+      });
+      if (stops.length < 2) return null;
+      var ctx = env.doc.context, PL = global.PDFLib;
+      if (!PL) return null;
+      var rgb = function (c) { return [c.r, c.g, c.b]; };
+      var fns = [], bounds = [], enc = [];
+      for (var i = 0; i < stops.length - 1; i++) {
+        fns.push(ctx.register(ctx.obj({ FunctionType: 2, Domain: [0, 1], C0: rgb(stops[i].c), C1: rgb(stops[i + 1].c), N: 1 })));
+        if (i > 0) bounds.push(stops[i].o); enc.push(0, 1);
+      }
+      var fn = stops.length === 2 ? fns[0] : ctx.register(ctx.obj({ FunctionType: 3, Domain: [0, 1], Functions: fns, Bounds: bounds, Encode: enc }));
+      var gn = function (a, d) { var v = parseFloat(g.getAttribute(a)); return isNaN(v) ? d : v; };
+      var dict = g.localName === 'linearGradient'
+        ? { ShadingType: 2, ColorSpace: 'DeviceRGB', Coords: [gn('x1', 0), gn('y1', 0), gn('x2', 1), gn('y2', 0)], Function: fn, Extend: [true, true] }
+        : { ShadingType: 3, ColorSpace: 'DeviceRGB', Coords: [gn('fx', gn('cx', 0.5)), gn('fy', gn('cy', 0.5)), 0, gn('cx', 0.5), gn('cy', 0.5), gn('r', 0.5)], Function: fn, Extend: [true, true] };
+      var ref = ctx.register(ctx.obj(dict));
+      var res = env.page.node.normalizedEntries().Resources, key = PL.PDFName.of('Shading'), sd = res.lookupMaybe(key, PL.PDFDict);
+      if (!sd) { sd = ctx.obj({}); res.set(key, sd); }
+      var name = 'GrS' + (++shadingCounter);
+      sd.set(PL.PDFName.of(name), ref);
+      shadings[id] = '/' + name;
+      return shadings[id];
     };
     Array.prototype.forEach.call(root.querySelectorAll('image'), function (im) {
       var href = im.getAttribute('href') || im.getAttributeNS('http://www.w3.org/1999/xlink', 'href') || '';
@@ -245,10 +279,11 @@
         }
         var geo = geometry(el);
         if (!geo) return '';
-        var fillC = tag === 'line' || tag === 'polyline' && s.fill === undefined ? null : color(s.fill === undefined ? '#000' : s.fill, root);
+        var gradM = typeof s.fill === 'string' && s.fill.match(/^url\(\s*['"]?#([^)'"]+)['"]?\s*\)/), gradName = gradM && shadingFor(gradM[1]);
+        var fillC = tag === 'line' || tag === 'polyline' && s.fill === undefined ? null : (gradName ? null : color(s.fill === undefined ? '#000' : s.fill, root));
         var strokeC = color(s.stroke, root), sw = parseFloat(s['stroke-width']); if (isNaN(sw)) sw = 1;
         if (strokeC && sw <= 0) strokeC = null;
-        if (!fillC && !strokeC) return '';
+        if (!fillC && !strokeC && !gradName) return '';
         var go = op * (s.__op || 1);
         var fa = fillC ? go * fillC.a * (s['fill-opacity'] === undefined ? 1 : +s['fill-opacity']) : 1;
         var sa = strokeC ? go * strokeC.a * (s['stroke-opacity'] === undefined ? 1 : +s['stroke-opacity']) : 1;
@@ -264,6 +299,14 @@
           paint += (da && da !== 'none' ? '[' + da.split(/[\s,]+/).filter(Boolean).map(Number).map(f).join(' ') + '] 0 d\n' : '[] 0 d\n');
         }
         var eo2 = s['fill-rule'] === 'evenodd';
+        if (gradName) {
+          // gradient fill: clip to the shape, paint the shading, then stroke the outline on top
+          var gfa = go * (s['fill-opacity'] === undefined ? 1 : +s['fill-opacity']), gp = '';
+          if (gfa < 0.999) gp += gsFor(Math.max(0, Math.min(1, gfa)), 1) + ' gs\n';
+          var res = (open ? o : 'q\n' + o) + 'q\n' + gp + geo + (eo2 ? 'W* n' : 'W n') + '\n' + gradName + ' sh\nQ\n';
+          if (strokeC) res += 'q\n' + (sa < 0.999 ? gsFor(1, Math.max(0, Math.min(1, sa))) + ' gs\n' : '') + paint.replace(/^[^\n]*gs\n/, '') + geo + 'S\nQ\n';
+          return res + 'Q\n';
+        }
         var opx = fillC && strokeC ? (eo2 ? 'B*' : 'B') : fillC ? (eo2 ? 'f*' : 'f') : 'S';
         return (open ? o : 'q\n' + o) + paint + geo + opx + '\nQ\n';
       };

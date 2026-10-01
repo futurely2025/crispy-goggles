@@ -217,6 +217,7 @@
         toast('تمت استعادة عملك السابق على هذا الملف', false, { label: 'البدء من جديد', fn: function () { push(); restore(freshJson); } });
       }
       $('empty').hidden = true;
+      document.dispatchEvent(new Event('pdf-opened'));       // the properties panel takes its width before the page is fitted
       S.zoom = fitZoom();
       layoutPages();
       status('عدد الصفحات: ' + S.pages.length);
@@ -603,6 +604,7 @@
       case 'svg': case 'image':
         return '<image href="' + lookHref(o, data) + '" x="' + f2(o.x) + '" y="' + f2(o.y) + '" width="' + f2(o.w) + '" height="' + f2(o.h) + '" preserveAspectRatio="none"/>';
       case 'text': return textSvgInner(o);
+      case 'shape': return window.PdfShapes ? PdfShapes.inner(o, data, exporting) : '';
       case 'note': return noteInner(o, exporting);
       case 'ink':
         var d = inkPath(o.pts);
@@ -649,6 +651,7 @@
     return { x: Math.min(o.x1, o.x2), y: Math.min(o.y1, o.y2), w: Math.abs(o.x2 - o.x1), h: Math.abs(o.y2 - o.y1) };
   }
   function bbox(o) {
+    if (o.t === 'shape' && window.PdfShapes) return PdfShapes.bbox(o);
     if (o.t === 'note') return { x: o.x, y: o.y, w: 20, h: 20 };
     if (o.t === 'ink') {
       var xs = o.pts.map(function (p) { return p[0]; }), ys = o.pts.map(function (p) { return p[1]; }), m = o.width / 2;
@@ -668,13 +671,15 @@
     if (list.length) {
       var hs = 5 / S.zoom;
       list.forEach(function (o) {
+        if (o.t === 'shape' && list.length === 1) return;
         var b = bbox(o);
         out += '<rect class="selbox' + (o.lock ? ' lk' : '') + '" x="' + f2(b.x - 2) + '" y="' + f2(b.y - 2) + '" width="' + f2(b.w + 4) + '" height="' + f2(b.h + 4) + '"/>';
         if (o.lock) out += '<text class="lockbadge" x="' + f2(b.x + b.w + 3) + '" y="' + f2(b.y + 2) + '" font-size="' + f2(11 / S.zoom) + '">🔒</text>';
       });
       if (list.length > 1) { var u = unionBox(list); out += '<rect class="selbox all" x="' + f2(u.x - 5) + '" y="' + f2(u.y - 5) + '" width="' + f2(u.w + 10) + '" height="' + f2(u.h + 10) + '"/>'; }
       var s = list.length === 1 ? list[0] : null;
-      if (s && s.t !== 'ink' && s.t !== 'note' && !s.lock) {
+      if (s && s.t === 'shape' && window.PdfShapes) out += PdfShapes.overlay(s, S.zoom);
+      else if (s && s.t !== 'ink' && s.t !== 'note' && !s.lock) {
         var b1 = bbox(s);
         [[b1.x + b1.w, b1.y + b1.h, 'se'], [b1.x, b1.y, 'nw'], [b1.x + b1.w, b1.y, 'ne'], [b1.x, b1.y + b1.h, 'sw']].forEach(function (h) {
           out += '<rect class="hd' + (h[2] === 'ne' || h[2] === 'sw' ? ' h2' : '') + '" data-h="' + h[2] + '" x="' + f2(h[0] - hs) + '" y="' + f2(h[1] - hs) + '" width="' + f2(hs * 2) + '" height="' + f2(hs * 2) + '"/>';
@@ -731,6 +736,7 @@
     if (t !== 'select' && S.sel) { var pg = S.sel.page; S.sel = null; drawOverlay(pg); }
     syncProps();
     if (window.PdfText) PdfText.onTool(t);
+    document.dispatchEvent(new Event('pdf-tool'));
   }
   Array.prototype.forEach.call(document.querySelectorAll('#tools [data-tool]'), function (b) { b.onclick = function () { setTool(b.dataset.tool); }; });
 
@@ -761,7 +767,7 @@
     } else if (t === 'select') {
       var h = e.target.getAttribute('data-h');
       var inSel = hitId && S.sel && S.sel.page === i && (S.sel.ids || []).indexOf(hitId) >= 0;
-      if (h && selObj()) { drag = { kind: 'resize', i: i, sv: sv, h: h, start: pt, orig: JSON.parse(JSON.stringify(selObj())), pushed: false }; }
+      if (h && selObj()) { drag = { kind: selObj().t === 'shape' ? 'shapeh' : 'resize', i: i, sv: sv, h: h, start: pt, orig: JSON.parse(JSON.stringify(selObj())), pushed: false }; }
       else if (hitId && e.shiftKey) {
         // Shift+click: add to / remove from the selection (whole groups at once)
         var add = groupIds(i, hitId), ids = S.sel && S.sel.page === i ? (S.sel.ids || [S.sel.id]).slice() : [];
@@ -802,6 +808,11 @@
     } else if (/^(rect|ellipse|line|arrow|white)$/.test(t)) {
       drag = { kind: 'shape', i: i, sv: sv, o: t === 'white' ? { id: uid(), t: t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: S.props.color, width: S.props.width, fill: S.props.fill } : born({ id: uid(), t: t, x1: pt[0], y1: pt[1], x2: pt[0], y2: pt[1], color: S.props.color, width: S.props.width, fill: S.props.fill }) };
       push(); p.objs.push(drag.o);
+    } else if (t === 'shape' && window.PdfShapes) {
+      var sd = PdfShapes.onToolDown(i, sv, pt, e);
+      if (sd === 'poly') { e.preventDefault(); return; }
+      if (!sd) return;
+      drag = sd;
     } else if (t === 'snap' || t === 'crop' || t === 'clip') {
       drag = { kind: t === 'snap' ? 'snap' : t, i: i, sv: sv, start: pt, cur: pt };
     } else return;
@@ -840,6 +851,12 @@
       var sn = e.altKey ? { dx: dx, dy: dy, lines: [] } : snapMove(drag.i, drag.origs, dx, dy);
       guides = sn.lines.length ? { i: drag.i, lines: sn.lines } : null;
       drag.origs.forEach(function (g) { var o = list.filter(function (x) { return x.id === g.id; })[0]; if (o) moveObj(o, g, sn.dx, sn.dy); });
+    } else if (drag.kind === 'shapedraw') {
+      PdfShapes.dragDraw(drag, pt, e);
+    } else if (drag.kind === 'shapeh') {
+      var so = selObj(); if (!so || so.lock) return;
+      if (!drag.pushed) { S.undo.push(JSON.stringify(S.pages.map(function (pg, k) { return k === drag.i ? Object.assign({}, pg, { objs: pg.objs.map(function (x) { return x.id === so.id ? drag.orig : x; }) }) : pg; }))); S.redo = []; drag.pushed = true; }
+      PdfShapes.dragHandle(drag, so, pt, e);
     } else if (drag.kind === 'resize') {
       var o = selObj(); if (!o || o.lock) return;
       if (!drag.pushed) { S.undo.push(JSON.stringify(S.pages.map(function (pg, k) { return k === drag.i ? Object.assign({}, pg, { objs: pg.objs.map(function (x) { return x.id === o.id ? drag.orig : x; }) }) : pg; }))); S.redo = []; drag.pushed = true; }
@@ -872,7 +889,8 @@
       else { if (d.o.t !== 'line' && d.o.t !== 'arrow') { d.o.x = b.x; d.o.y = b.y; d.o.w = b.w; d.o.h = b.h; delete d.o.x1; delete d.o.y1; delete d.o.x2; delete d.o.y2; } changed(); }
       drawOverlay(d.i); markThumb(d.i);
     } else if (d.kind === 'ink') { d.o.pts = simplify(d.o.pts, 0.35 / Math.max(0.5, S.zoom)); changed(); drawOverlay(d.i); markThumb(d.i); }
-    else if (d.kind === 'move' || d.kind === 'resize') { guides = null; if (d.pushed) changed(); drawOverlay(d.i); }
+    else if (d.kind === 'shapedraw') { PdfShapes.endDraw(d); }
+    else if (d.kind === 'move' || d.kind === 'resize' || d.kind === 'shapeh') { guides = null; if (d.pushed) changed(); drawOverlay(d.i); }
     else if (d.kind === 'marquee') {
       var mq = d.sv.querySelector('.snaprect'); if (mq) mq.remove();
       var bx = { x: Math.min(d.start[0], d.cur[0]), y: Math.min(d.start[1], d.cur[1]), w: Math.abs(d.cur[0] - d.start[0]), h: Math.abs(d.cur[1] - d.start[1]) };
@@ -913,6 +931,7 @@
     return { dx: dx, dy: dy, lines: lines };
   }
   function moveObj(o, g, dx, dy) {
+    if (o.t === 'shape' && window.PdfShapes) { PdfShapes.move(o, g, dx, dy); return; }
     if (o.t === 'ink') { o.pts = g.pts.map(function (p) { return [p[0] + dx, p[1] + dy]; }); return; }
     if (o.x1 !== undefined) { o.x1 = g.x1 + dx; o.y1 = g.y1 + dy; o.x2 = g.x2 + dx; o.y2 = g.y2 + dy; return; }
     o.x = g.x + dx; o.y = g.y + dy;
@@ -937,6 +956,7 @@
     if (!o) return;
     if (o.lock) return toast('العنصر مقفل — افتح القفل من الشريط لتعديله');
     if (o.t === 'text') editText(i, o);
+    else if (o.t === 'shape' && window.PdfShapes) PdfShapes.dbl(i, o, pt);
     else if (o.t === 'svg' && o.kind !== 'stamp') editSvgObj(i, o);
     else if (o.t === 'note') editNote(i, o);
   }
@@ -1050,6 +1070,7 @@
       if (o.kind === 'eq' && o.ink) Array.prototype.forEach.call($('swatches').children, function (b) { b.setAttribute('aria-pressed', String(b.dataset.c === o.ink)); });
     }
     Array.prototype.forEach.call(document.querySelectorAll('.props [data-for]'), function (el) { el.style.display = show[el.dataset.for] ? '' : 'none'; });
+    if (window.PdfShapes) PdfShapes.sync();
   }
   $('colorInp').oninput = function () { setProp('color', this.value); };
   $('widthInp').onchange = function () { setProp('width', +this.value); };
@@ -1969,5 +1990,5 @@
   window.__pdf = { S: S, snapshot: snapshot, restore: restore, inkPath: inkPath, simplify: simplify, openBytes: openBytes, exportPdf: exportPdf, exportDialog: exportDialog, buildPdf: buildPdf, insertFromEditor: insertFromEditor, insertFigure: insertFigure, pageOp: pageOp, setTool: setTool, drawOverlay: drawOverlay, layoutPages: layoutPages, snapshotRegion: snapshotRegion, select: select, insertPdfFile: insertPdfFile, loadSrc: loadSrc,
     // for the studio modules (ext.js)
     regionImage: regionImage, openFile: openFile, pinOf: pinOf, srcPage: srcPage, rendered: function (i) { return rendered[i] !== undefined; }, fitZoom: fitZoom, setZoom: setZoom, layoutPagesKeep: function () { layoutPages(); }, drawBg: drawBg, markThumb: markThumb, push: push, changed: changed, setAsset: setAsset, uid: uid, born: born, goto: goto, toast: toast, busy: busy, popAt: popAt,
-    download: download, copyBlob: copyBlob, cropOf: cropOf, visibleTop: visibleTop, selObjs: selObjs, alignSel: alignSel, groupSel: groupSel, lockSel: lockSel, saveOpt: saveOpt, newBlank: newBlank, buildThumbs: buildThumbs, textHeight: textHeight, pageEl: pageEl };
+    download: download, copyBlob: copyBlob, cropOf: cropOf, visibleTop: visibleTop, selObjs: selObjs, alignSel: alignSel, groupSel: groupSel, lockSel: lockSel, saveOpt: saveOpt, newBlank: newBlank, buildThumbs: buildThumbs, textHeight: textHeight, pageEl: pageEl, ptOf: ptOf, textSvgInner: textSvgInner, wrapText: wrapText, lhOf: lhOf, objInner: objInner, bbox: bbox, moveObj: moveObj };
 })();
