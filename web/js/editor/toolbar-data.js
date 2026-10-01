@@ -105,7 +105,8 @@
        b('\\overset{#?}{#0}', 'رمز فوق', 'Over'), b('\\underset{#?}{#0}', 'رمز تحت', 'Under'),
        b('\\overset{#?}{\\underset{#?}{#0}}', 'فوق وتحت', 'Over & under')],
       [b('\\sqrt{#0}', 'جذر', 'Root'), b('\\sqrt[3]{#0}', 'جذر تكعيبي', 'Cube root'), b('\\sqrt[#?]{#0}', 'جذر نوني', 'n-th root')],
-      [{ i: '\\,', t: 'مسافة صغيرة', e: 'Thin space', d: '\\text{a}\\,\\text{b}' },
+      [{ i: '\\ ', t: 'مسافة عادية (Space)', e: 'Normal space (Space key)', d: '\\text{a}\\ \\text{b}' },
+       { i: '\\,', t: 'مسافة صغيرة', e: 'Thin space', d: '\\text{a}\\,\\text{b}' },
        { i: '\\;', t: 'مسافة متوسطة', e: 'Medium space', d: '\\text{a}\\;\\text{b}' },
        { i: '\\quad', t: 'مسافة كبيرة', e: 'Quad', d: '\\text{a}\\quad\\text{b}' },
        b('\\text{#0}', 'نص عادي', 'Text', '\\text{abc}')]
@@ -183,6 +184,7 @@
       [c('^{14}_{6}C', 'نظير (عدد كتلي وذري)', 'Isotope', '{}^{14}_{6}\\mathrm{C}'), c('*', 'ماء التبلور', 'Hydrate dot', '\\mathrm{CuSO_4\\cdot 5H_2O}'),
        c('^{II}', 'عدد التأكسد', 'Oxidation state', '\\mathrm{Fe}^{\\mathrm{II}}'), c('( )', 'أقواس', 'Parentheses', '(\\;)'),
        c('[ ]', 'أقواس مربعة', 'Brackets', '[\\;]'), c('e-', 'إلكترون', 'Electron', '\\mathrm{e}^{-}'), c('hv', 'فوتون', 'Photon', 'h\\nu')],
+      [c(' ', 'مسافة (Space)', 'Space', '\\ce{A\\ B}'), c('~~', 'مسافة أوسع', 'Wide space', '\\ce{A~~B}')],
       [c('H2O', 'ماء', 'Water', '\\ce{H2O}'), c('CO2', 'ثاني أكسيد الكربون', 'CO2', '\\ce{CO2}'), c('H2SO4', 'حمض الكبريتيك', 'Sulfuric acid', '\\ce{H2SO4}'),
        c('NaCl', 'ملح الطعام', 'NaCl', '\\ce{NaCl}'), c('NH3', 'الأمونيا', 'Ammonia', '\\ce{NH3}'), c('CH4', 'الميثان', 'Methane', '\\ce{CH4}'),
        c('OH-', 'الهيدروكسيد', 'Hydroxide', '\\ce{OH-}'), c('H3O+', 'الهيدرونيوم', 'Hydronium', '\\ce{H3O+}'),

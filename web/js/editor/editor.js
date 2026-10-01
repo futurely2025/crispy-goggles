@@ -108,6 +108,14 @@
       mf.inlineShortcuts = Object.assign({}, mf.inlineShortcuts || {}, arabicShortcuts());
     } catch (e) { /* older API */ }
     MathFieldRTL.attach(mf);
+    // Space in the visual field (5.8.2): MathLive ignores it in math mode, so a typed space vanished.
+    // Space = normal word space (\ ), Shift+Space = wide space (\quad). Inside \text{…} MathLive already keeps spaces.
+    mf.addEventListener('keydown', function (e) {
+      if (e.key !== ' ' || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      if (mf.mode === 'text') return;
+      e.preventDefault(); e.stopPropagation();
+      mf.insert(e.shiftKey ? '\\quad ' : '\\ ', { format: 'latex', selectionMode: 'after' });
+    }, true);
     MathFieldRTL.set(mf, st.rtl && st.mode === 'math');
     mf.style.setProperty('--armath-ar-font', "'" + st.font + "'");
     mf.addEventListener('input', function (e) { arabicAutoFunction(e); schedulePreview(); });
