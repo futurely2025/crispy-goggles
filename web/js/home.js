@@ -158,6 +158,7 @@
         if (!nFig) many = en ? n + ' equations inserted' : 'تم إدراج ' + n + ' معادلات';
         else if (nFig === n) many = en ? n + ' figures/tables inserted' : 'تم إدراج ' + n + ' رسوم وجداول';
         else many = en ? (n - nFig) + ' equations and ' + nFig + ' figures/tables inserted' : 'تم إدراج ' + (n - nFig) + ' معادلات و' + nFig + ' رسوم وجداول';
+        showVecState();
         toast(res && res.replaced ? T('updated') : (n > 1 ? many : (nFig ? T('figInserted') : T('inserted'))));
         setTimeout(checkSelection, 300);
       })
@@ -293,6 +294,7 @@
     $('sSum').value = settings.sumStyle;
     $('sAutoEdit').checked = !!settings.autoEdit;
     $('sVector').checked = settings.vector !== false;
+    showVecState();
     if ($('sFigClear')) $('sFigClear').checked = settings.figBg === 'none';
     var grid = $('namesGrid');
     grid.innerHTML = '';
@@ -323,10 +325,23 @@
   }
   bindSetting('sOpenIn', 'openIn');
   bindSetting('sLang', 'lang');
-  bindSetting('sDpi', 'dpi', function (el) { return +el.value; });
+  bindSetting('sDpi', 'dpi', function (el) { setTimeout(showVecState, 0); return +el.value; });
   bindSetting('sSum', 'sumStyle');
   bindSetting('sAutoEdit', 'autoEdit', function (el) { return el.checked; });
-  bindSetting('sVector', 'vector', function (el) { WordBridge.resetSvg(); return el.checked; });
+  bindSetting('sVector', 'vector', function (el) { WordBridge.resetSvg(); setTimeout(showVecState, 0); return el.checked; });
+  // what the next insertion will be: the picture is vector (SVG, sharp at any zoom/print) or the PNG fallback at the chosen dpi
+  function showVecState() {
+    var el = $('vecState'); if (!el || !window.WordBridge) return;
+    var st = WordBridge.vectorState(), en = settings.lang === 'en', dpi = +settings.dpi || 900;
+    var msg = {
+      on: en ? '✓ Vector (SVG) is active: equations stay sharp at any zoom and in print. The ' + dpi + ' dpi picture is only a fallback for older Word.' : '✓ الإدراج المتّجه (SVG) مفعّل: المعادلة حادّة عند أي تكبير وفي الطباعة. صورة ' + dpi + ' dpi احتياطية لإصدارات Word القديمة فقط.',
+      off: en ? 'Vector is off: equations are inserted as a ' + dpi + ' dpi picture. Turn the switch on for the sharpest result.' : 'المتّجه مُعطّل: تُدرج المعادلات كصورة بدقة ' + dpi + ' dpi. فعّل المفتاح للحصول على أعلى وضوح.',
+      failed: en ? 'Word refused SVG earlier, so a ' + dpi + ' dpi picture is used (retried after a day). Toggle the switch off and on to retry now. Tip: in Word → File → Options → Advanced → Image size and quality, tick "Do not compress images in file".' : 'رفض Word الـ SVG سابقاً فتُدرج صورة ' + dpi + ' dpi (تُعاد المحاولة بعد يوم). أطفئ المفتاح ثم شغّله لإعادة المحاولة الآن. نصيحة: من Word ← ملف ← خيارات ← خيارات متقدمة ← «حجم الصورة وجودتها» فعّل «عدم ضغط الصور في الملف».',
+      unsupported: en ? 'Vector conversion is not available in this browser engine: a ' + dpi + ' dpi picture is used.' : 'التحويل المتّجه غير متاح في محرك المتصفح هنا: تُدرج صورة ' + dpi + ' dpi.'
+    };
+    el.textContent = msg[st] || '';
+    el.style.color = st === 'on' ? 'var(--tq-3)' : 'var(--danger)';
+  }
   // figures without a white background: new figures follow the switch, and the ones already in the document are redrawn
   if ($('sFigClear')) $('sFigClear').onchange = function () {
     reload();
@@ -365,6 +380,12 @@
   // the PDF studio is a full-page tool: it opens in the browser (it does not insert into Word)
   $('pdfTile').onclick = function () {
     var u = baseUrl() + 'pdf.html';
+    try { if (inWord && Office.context.ui && Office.context.ui.openBrowserWindow) { Office.context.ui.openBrowserWindow(u); return; } } catch (e) { /* fall back */ }
+    window.open(u, '_blank');
+  };
+
+  $('pdfToolsTile').onclick = function () {
+    var u = baseUrl() + 'tools/index.html';
     try { if (inWord && Office.context.ui && Office.context.ui.openBrowserWindow) { Office.context.ui.openBrowserWindow(u); return; } } catch (e) { /* fall back */ }
     window.open(u, '_blank');
   };

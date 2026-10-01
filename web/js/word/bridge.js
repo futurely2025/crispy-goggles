@@ -359,7 +359,7 @@
           var range = target.insertOoxml(ooxml, loc);
           if (layout.display && oneLine && !layout.numbered) range.paragraphs.getFirst().alignment = 'Centered';
           range.select('End');
-          return ctx.sync().then(function () { return { replaced: !!pic }; });
+          return ctx.sync().then(function () { return { replaced: !!pic, vector: !layout.noSvg && hasSvg(items) }; });
         });
       });
     });
@@ -626,6 +626,8 @@
     setFigClear: function (on) { figClear = !!on; }, figSvg: figSvg, bgSvg: bgSvg, setBackground: setBackground,
     vectorOf: vectorOf, withSvgFallback: withSvgFallback, svgActive: svgActive,
     setVector: function (on) { svgOn = on !== false; },
+    // 'on' | 'off' (switched off in settings) | 'failed' (Word refused SVG; retried after a day) | 'unsupported' (no HarfBuzz/WASM here)
+    vectorState: function () { return !svgOn ? 'off' : svgFailed() ? 'failed' : (global.Vector && global.Vector.supported() ? 'on' : 'unsupported'); },
     resetSvg: function () { svgFailSession = false; try { localStorage.removeItem(SVG_FAIL); } catch (e) { /* ignore */ } }
   };
 })(window);

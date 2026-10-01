@@ -5,7 +5,7 @@
     ar: {
       appName: 'معادلات عربية', editorTitle: 'محرر المعادلات', loading: 'جارٍ التحميل…',
       zoomIn: 'تكبير', zoomOut: 'تصغير', fitWidth: 'ملاءمة العرض', expand: 'ملء الشاشة', toggleToolbar: 'إظهار/إخفاء شريط الرموز',
-      studios: 'أدوات متقدمة', stGraph: 'رسم الدوال', stGeometry: 'الأشكال الهندسية', stStructure: 'الصيغ البنائية', stSolve: 'حل خطوة بخطوة', stChart: 'الإحصاء والرسوم البيانية', stPhysics: 'الفيزياء والميكانيكا', stCircuit: 'الدوائر الكهربائية', stPdf: 'استوديو PDF — حلول على الكتب', stChem: 'الكيمياء: الذرة والمختبر', copyImage: 'نسخ كصورة', imageCopied: 'تم نسخ الصورة — الصقها في تطبيقك (Ctrl+V)', stDiagram: 'جدول التغيرات والمخططات',
+      studios: 'أدوات متقدمة', stGraph: 'رسم الدوال', stGeometry: 'الأشكال الهندسية', stStructure: 'الصيغ البنائية', stSolve: 'حل خطوة بخطوة', stChart: 'الإحصاء والرسوم البيانية', stPhysics: 'الفيزياء والميكانيكا', stCircuit: 'الدوائر الكهربائية', stPdf: 'استوديو PDF — حلول على الكتب', stPdfTools: 'أدوات PDF — دمج، ضغط، تحويل…', stChem: 'الكيمياء: الذرة والمختبر', copyImage: 'نسخ كصورة', imageCopied: 'تم نسخ الصورة — الصقها في تطبيقك (Ctrl+V)', stDiagram: 'جدول التغيرات والمخططات',
       figGraph: 'رسم بياني', figGeometry: 'شكل هندسي', figStructure: 'صيغة بنائية', figInserted: 'تم إدراج الرسم', selectedFig: 'الرسم المحدد', figUpdated: 'تم تحديث الرسم',
       tagline: 'أسهل طريقة لكتابة المعادلات العربية والكيميائية في Word',
       math: 'رياضيات', chem: 'كيمياء',
@@ -47,7 +47,7 @@
     },
     en: {
       zoomIn: 'Zoom in', zoomOut: 'Zoom out', fitWidth: 'Fit width', expand: 'Full screen', toggleToolbar: 'Show/hide toolbar',
-      studios: 'Advanced tools', stGraph: 'Function graphs', stGeometry: 'Geometry figures', stStructure: 'Structural formulas', stSolve: 'Step-by-step solver', stChart: 'Statistics & charts', stPhysics: 'Physics & mechanics', stCircuit: 'Electric circuits', stPdf: 'PDF studio — solutions on books', stChem: 'Chemistry: atoms & lab', copyImage: 'Copy as image', imageCopied: 'Image copied — paste it in your app (Ctrl+V)', stDiagram: 'Tables & diagrams',
+      studios: 'Advanced tools', stGraph: 'Function graphs', stGeometry: 'Geometry figures', stStructure: 'Structural formulas', stSolve: 'Step-by-step solver', stChart: 'Statistics & charts', stPhysics: 'Physics & mechanics', stCircuit: 'Electric circuits', stPdf: 'PDF studio — solutions on books', stPdfTools: 'PDF tools — merge, compress, convert…', stChem: 'Chemistry: atoms & lab', copyImage: 'Copy as image', imageCopied: 'Image copied — paste it in your app (Ctrl+V)', stDiagram: 'Tables & diagrams',
       figGraph: 'Graph', figGeometry: 'Geometry', figStructure: 'Structure', figInserted: 'Figure inserted', selectedFig: 'Selected figure', figUpdated: 'Figure updated',
       appName: 'Arabic Math', editorTitle: 'Equation editor', loading: 'Loading…',
       tagline: 'The easiest way to write Arabic math and chemistry in Word',
@@ -94,13 +94,15 @@
   var DEF = {
     lang: 'ar', rtl: true, digits: 'western', arabicFunctions: true, arabicComma: true, sumStyle: 'mirror',
     font: 'Amiri', mathFont: 'stix2', fontSize: 14, color: '#000000', bold: false, display: false,
-    openIn: 'dialog', dpi: 600, vector: true, autoEdit: false, layout: 'stack', sep: 'space', labels: false, names: null, figBg: ''
+    openIn: 'dialog', dpi: 900, dpiV: 2, vector: true, autoEdit: false, layout: 'stack', sep: 'space', labels: false, names: null, figBg: ''
   };
   function load() {
     var s = {};
     try { s = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { s = {}; }
     var o = {};
     for (var k in DEF) o[k] = s[k] !== undefined ? s[k] : DEF[k];
+    // 5.8: the fallback picture is 900 dpi by default; a stored old default (600) is raised once, a deliberate choice is kept
+    if (s.dpiV !== 2 && (s.dpi === undefined || +s.dpi === 600)) o.dpi = 900;
     return o;
   }
   function save(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* ignore */ } }
