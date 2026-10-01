@@ -10,3 +10,7 @@ Tinos, Arimo (Latin/Greek outlines for vector output, fonts/vector) - Apache Lic
 STIX Two Math, symbol subset (fonts/vector/STIXTwoMath-sym.ttf) - SIL Open Font License 1.1
 pdf.js 4.10.38 (PDF studio: page rendering, vendor/pdfjs) - Apache License 2.0 - https://github.com/mozilla/pdf.js
 pdf-lib 1.17.1 (PDF studio: writing the edited PDF, vendor/pdf-lib) - MIT License - https://github.com/Hopding/pdf-lib
+JSZip 3.10.2 (ZIP output of the PDF tools, vendor/jszip) - MIT or GPLv3 (used under MIT) - https://github.com/Stuk/jszip
+mammoth.js 1.13.0 (Word .docx to HTML for "Word to PDF", vendor/mammoth-docx) - BSD 2-Clause - https://github.com/mwilliamson/mammoth.js
+jsdiff 9.0.0 (text comparison in "Compare PDF", vendor/diff) - BSD 3-Clause - https://github.com/kpdecker/jsdiff
+qpdf (WebAssembly build @jspawn/qpdf-wasm 0.0.2: password protect / unlock, vendor/qpdf) - Apache License 2.0 - https://github.com/jsscheller/qpdf-wasm
