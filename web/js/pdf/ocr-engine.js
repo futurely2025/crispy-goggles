@@ -267,7 +267,12 @@
         gzip: true, workerBlobURL: false, cacheMethod: 'none',
         logger: function (m) { if (progressCb && m) progressCb(m); }
       });
-    }).then(function (w) { worker = w; return w; });
+    }).then(function (w) { worker = w; return w; }, function (e) {
+      // the accurate (float) models are an optional download: fall back to the bundled ones
+      workerP = null; workerKey = '';
+      if (model === 'best') { if (progressCb) progressCb({ status: 'init fallback' }); return getWorker('fast', langs); }
+      throw e;
+    });
     return workerP;
   }
   var PARAMS = { preserve_interword_spaces: '1', tessedit_char_blacklist: '|~^_`{}\\', user_defined_dpi: '300', lstm_choice_mode: '0' };

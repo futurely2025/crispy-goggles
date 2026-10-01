@@ -2,7 +2,7 @@
  * Strategy: network first (so an update on the site is used at once), the cache is only the fallback when offline.
  * Only same-origin GET requests are handled; everything else goes to the network untouched. */
 'use strict';
-var VERSION = 'armath-pdf-5.11.1';
+var VERSION = 'armath-pdf-5.11.2';
 var CORE = [
   'pdf.html', 'pdf-manifest.json', 'js/core/logger.js', 'css/fonts.css', 'css/brand.css', 'css/studio.css', 'css/pdf.css', 'css/shapes.css', 'js/pdf/shapes-lib.js', 'js/pdf/shapes.js', 'js/pdf/annot.js', 'js/pdf/cmdk.js', 'js/pdf/ocr-engine.js', 'js/pdf/ocr-layer.js', 'js/pdf/modern.js', 'css/modern.css', 'js/pdf/ocr.js',
   'js/i18n.js', 'js/core/render-host.js', 'js/core/vector.js', 'js/studio/raster.js', 'js/figures/util.js', 'js/figures/registry.js',
