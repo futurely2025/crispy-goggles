@@ -81,7 +81,7 @@
           '<div class="cimg" data-go="' + x.k + '"><img alt="" data-img="' + x.c.id + '"></div>' +
           '<div class="cmeta"><input class="clabel" data-lab="' + x.k + '" dir="auto" value="' + esc(labelOf(x.c)) + '" title="اسم السؤال">' +
           '<span class="cpg">' + (x.i < 0 ? 'الصفحة حُذفت' : 'صفحة ' + (x.i + 1)) + (x.c.copied ? ' · ✓ نُسخ' : '') + '</span>' +
-          '<div class="cact"><button data-a="copy" title="نسخ صورة">📋</button><button data-a="png" title="تنزيل PNG">⬇</button><button data-a="solve" title="صفحة حل لهذا السؤال">📝</button><button data-a="go" title="الذهاب إليه">↗</button><button data-a="del" title="حذف من القائمة">✕</button></div></div></li>';
+          '<div class="cact"><button data-a="copy" title="نسخ صورة">📋</button><button data-a="png" title="تنزيل PNG">⬇</button><button data-a="go" title="الذهاب إليه">↗</button><button data-a="del" title="حذف من القائمة">✕</button></div></div></li>';
       }).join('') + '</ol>' : '<div class="cempty">اختر أداة <b>✂ قص سؤال</b> (أو اضغط Q) ثم ارسم مستطيلاً حول كل سؤال في الامتحان بالترتيب. يُضاف السؤال هنا مرقّماً ويُنسخ صورة لتلصقه في راجع مباشرة.</div>');
     // thumbnails, one after another
     var chain = Promise.resolve();
@@ -272,7 +272,7 @@
   $('tplBtn').onclick = function () { if (!S.pdf) return; tplMenu(); P.popAt($('tplPop'), this); };
 
   // ================================================================ 2) solution mode + student preview
-  S.solMode = S.opt.solMode !== false;
+  S.solMode = false; S.opt.solMode = false; S.preview = false;
   function syncModes() {
     $('solModeBtn').setAttribute('aria-pressed', String(!!S.solMode));
     $('previewBtn').setAttribute('aria-pressed', String(!!S.preview));

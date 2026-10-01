@@ -727,7 +727,7 @@
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   }
   // new additions count as "solution" (hidden in the student copy) while the solution mode is on
-  S.solMode = true;
+  S.solMode = false;
   function born(o) { if (S.solMode) o.sol = true; return o; }
 
   // ------------------------------------------------------------ tools & pointer
@@ -965,12 +965,12 @@
   }
   function onDbl(e) {
     // pointer capture during the first click makes the svg itself the target: find the object under the point
-    var sv = e.currentTarget, i = +sv.closest('.page').dataset.i, pt = ptOf(e, sv), o = null;
+    var sv = e.currentTarget, i = +sv.closest('.page').dataset.i, pt = e._obj ? (function (b) { return [b.x + b.w / 2, b.y + b.h / 2]; })(bbox(e._obj)) : ptOf(e, sv), o = e._obj || null;
     var objs = S.pages[i].objs;
     for (var k = objs.length - 1; k >= 0 && !o; k--) { var b = bbox(objs[k]); if (pt[0] >= b.x - 3 && pt[0] <= b.x + b.w + 3 && pt[1] >= b.y - 3 && pt[1] <= b.y + b.h + 3) o = objs[k]; }
     if (!o) return;
     if (o.lock) return toast('العنصر مقفل — افتح القفل من الشريط لتعديله');
-    if (o.t === 'text') editText(i, o);
+    if (o.t === 'text') editText(i, o, false, true);
     else if (o.t === 'shape' && window.PdfShapes) PdfShapes.dbl(i, o, pt);
     else if (/^(link|field|redact|mark)$/.test(o.t) && window.PdfAnnot) PdfAnnot.dbl(i, o);
     else if (o.t === 'svg' && o.kind !== 'stamp') editSvgObj(i, o);
@@ -978,7 +978,7 @@
   }
 
   // text editing in place
-  function editText(i, o, isNew) {
+  function editText(i, o, isNew, late) {
     select(i, o.id);
     var el = pinOf(i), s = scale();
     var ta = document.createElement('textarea');
@@ -988,7 +988,9 @@
     ta.style.fontFamily = famOf(o); ta.style.fontStyle = o.italic ? 'italic' : 'normal'; ta.style.lineHeight = String(+o.lh || 1.5);
     ta.style.textAlign = o.align;
     var fit = function () { ta.style.height = '0px'; ta.style.height = Math.max(lhOf(o) * 1.05 * s, ta.scrollHeight) + 'px'; };
-    el.appendChild(ta); fit(); ta.focus();
+    el.appendChild(ta); fit();
+    // after a double-click the button release would steal focus right away: focus a moment later and ignore blurs until then
+    var armed = !late; if (late) setTimeout(function () { ta.focus(); ta.select && ta.setSelectionRange(ta.value.length, ta.value.length); armed = true; }, 120); else ta.focus();
     if (!isNew) push();
     var hidden = o.text; o.text = ''; drawOverlay(i); o.text = hidden;
     ta.oninput = fit;
@@ -1001,8 +1003,10 @@
       if (!o.text.trim()) { p.objs = p.objs.filter(function (x) { return x !== o; }); if (isNew) S.undo.pop(); }
       else o.h = textHeight(o);
       changed(); drawOverlay(i); markThumb(i);
+      // like Acrobat/Canva: after typing, the text becomes the selected object (move, resize, restyle) and the tool returns to Select
+      if (o.text.trim() && S.tool === 'text') setTimeout(function () { if (document.querySelector('textarea.tedit') || S.tool !== 'text') return; setTool('select'); select(i, o.id); toast('اسحب النص لتحريكه · انقر مرتين للتعديل · المقابض لتغيير العرض'); }, 0);
     };
-    ta.onblur = commit;
+    ta.onblur = function () { if (armed) commit(); };
     ta.onkeydown = function (e) { if (e.key === 'Escape' || (e.key === 'Enter' && (e.ctrlKey || e.metaKey))) { e.preventDefault(); ta.blur(); } e.stopPropagation(); };
   }
 
@@ -1454,7 +1458,7 @@
   }
   function newBlank(like, tpl) {
     var c = cropOf(like);
-    return { id: uid(), src: -1, rot: 0, w: c.w, h: c.h, objs: [], sol: true, tpl: tpl !== undefined ? tpl : (S.opt.tpl || '') };
+    return { id: uid(), src: -1, rot: 0, w: c.w, h: c.h, objs: [], tpl: tpl !== undefined ? tpl : '' };
   }
   function rotRect(r, oh) { return { x: oh - (r.y + r.h), y: r.x, w: r.h, h: r.w }; }
   function pageOp(op, arg) {
@@ -1484,7 +1488,7 @@
       S.pages.splice(op === 'blank' ? i + 1 : i, 0, n);
       S.tsel = [];
       layoutPages(); goto(op === 'blank' ? i + 1 : i);
-      toast('أُضيفت صفحة حل — اكتب عليها أو أضف معادلات');
+      toast('أُضيفت صفحة فارغة');
       return n;
     }
     if (op === 'dup') {
@@ -1860,9 +1864,8 @@
       title: 'حفظ نسخة PDF جديدة',
       body:
         '<div class="fld"><span>النسخة</span><div class="radios">' +
-        '<label><input type="radio" name="ver" value="teacher"> كاملة — نسخة المعلم (كل الحلول والإضافات)</label>' +
-        '<label><input type="radio" name="ver" value="student"> نسخة الطالب — بدون الحلول' + (hasSol ? '' : ' <small>(لا توجد حلول معلّمة بعد)</small>') + '</label>' +
-        '<label><input type="radio" name="ver" value="both"> الاثنتان معاً (ملفّان)</label></div></div>' +
+        '<label><input type="radio" name="ver" value="teacher" checked> نسخة كاملة بكل الإضافات</label>' +
+        '<label hidden><input type="radio" name="ver" value="student"></label><label hidden><input type="radio" name="ver" value="both"></label></div></div>' +
         '<div class="fld"><span>الصفحات</span><div class="radios">' +
         '<label><input type="radio" name="pg" value="all"' + (pre.pages ? '' : ' checked') + '> كل الصفحات (' + S.pages.length + ')</label>' +
         (nSel > 1 || pre.pages ? '<label><input type="radio" name="pg" value="sel"' + (pre.pages ? ' checked' : '') + '> المحددة (' + (pre.pages || selPages()).length + ')</label>' : '') +
@@ -1874,7 +1877,7 @@
         '<p class="dlg-note">الضغط يحوّل صفحات الكتاب إلى صور؛ مناسب للكتب المصوّرة. إضافاتك (المعادلات والرسوم والنصوص) تبقى متّجهة وحادّة دائماً.</p></div>',
       ok: 'حفظ',
       onOpen: function (el) {
-        el.querySelector('input[name=ver][value="' + (lastExport.version || 'teacher') + '"]').checked = true;
+        el.querySelector('input[name=ver][value="' + 'teacher' + '"]').checked = true;
         el.querySelector('input[name=q][value="' + (lastExport.quality || 'orig') + '"]').checked = true;
         el.querySelector('#rg').addEventListener('focus', function () { el.querySelector('input[name=pg][value=range]').checked = true; });
       },
@@ -1951,6 +1954,7 @@
     if ((k === 'delete') && !selObj() && S.tsel.length) { e.preventDefault(); pageOp('del'); return; }
     if (k === 'escape') { if (S.sel) select(S.sel.page, null); setTool('select'); return; }
     var o = selObj();
+    if (o && !o.lock && (k === 'enter' || k === 'f2') && S.sel.ids.length === 1) { e.preventDefault(); onDbl({ currentTarget: pageEl(S.sel.page).querySelector('svg.ov'), clientX: -1e5, clientY: -1e5, _obj: o }); return; }
     if (o && /^arrow/.test(k)) {
       var mv = selObjs().filter(function (x) { return !x.lock; }); if (!mv.length) return;
       e.preventDefault(); push();

@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="css/studio.css?v=5.0.0">
   <link rel="stylesheet" href="css/pdf.css?v=5.9.0">
   <link rel="stylesheet" href="css/shapes.css?v=5.9.0">
-  <link rel="stylesheet" href="css/modern.css?v=5.10.0">
+  <link rel="stylesheet" href="css/modern.css?v=5.10.2">
   <script src="js/core/logger.js?v=5.7.0"></script>
   <script src="js/i18n.js?v=5.8.1"></script>
   <script src="js/core/render-host.js?v=5.7.0"></script>
@@ -84,11 +84,11 @@
     <button class="act" id="stampBtn" title="أختام: ✓ ✗ ممتاز، الدرجة…"><i>🏷</i><b>ختم ▾</b></button>
     <button data-tool="note" title="ملاحظة لاصقة — تُحفظ تعليقاً في PDF (N)"><i>🗒</i><b>ملاحظة</b></button>
     <span class="sep"></span>
-    <span class="split"><button class="act" id="addPage" title="صفحة حل بعد الصفحة الحالية (بالقالب المختار)"><i>＋</i><b>صفحة حل</b></button><button class="act mini" id="tplBtn" title="قالب صفحة الحل">▾</button></span>
+    <span class="split"><button class="act" id="addPage" title="إضافة صفحة فارغة بعد الصفحة الحالية"><i>＋</i><b>صفحة فارغة</b></button><button class="act mini" id="tplBtn" title="" hidden>▾</button></span>
     <button class="act" id="pageMenuBtn" title="أدوات الصفحة"><i>▤</i><b>الصفحة ▾</b></button>
     <span class="sep"></span>
-    <button id="solModeBtn" class="mode" aria-pressed="true" title="وضع الحل: كل ما تضيفه يُعلَّم «حلاً» فيُحذف من نسخة الطالب. أطفئه لإضافة ما يراه الطالب أيضاً"><i>🎓</i><b>وضع الحل</b></button>
-    <button id="previewBtn" class="mode" aria-pressed="false" title="معاينة نسخة الطالب (بدون الحلول)"><i>👁</i><b>نسخة الطالب</b></button>
+    <button id="solModeBtn" hidden class="mode" aria-pressed="true" title="وضع الحل: كل ما تضيفه يُعلَّم «حلاً» فيُحذف من نسخة الطالب. أطفئه لإضافة ما يراه الطالب أيضاً"><i>🎓</i><b>وضع الحل</b></button>
+    <button id="previewBtn" hidden class="mode" aria-pressed="false" title="معاينة نسخة الطالب (بدون الحلول)"><i>👁</i><b>نسخة الطالب</b></button>
   </nav>
 
   <div class="props" id="props">
@@ -115,7 +115,7 @@
     <select id="fillInp" data-for="fill" title="التعبئة"><option value="none">بلا تعبئة</option><option value="soft">تعبئة شفافة</option><option value="solid">تعبئة كاملة</option></select>
     <span class="grow"></span>
     <span class="selinfo" id="selInfo"></span>
-    <button class="chip" id="solBtn" data-for="arr" aria-pressed="false" title="حل: يُحذف من نسخة الطالب">🎓 حل</button>
+    <button class="chip" id="solBtn" hidden data-for="arr" aria-pressed="false" title="حل: يُحذف من نسخة الطالب">🎓 حل</button>
     <button class="chip" id="arrBtn" data-for="arr" title="محاذاة، توزيع، تجميع، ترتيب">⧉ ترتيب ▾</button>
     <button class="chip" id="lockBtn" data-for="arr" title="قفل العنصر حتى لا يتحرك أو يُحذف">🔒 قفل</button>
     <button class="chip" id="dupBtn" title="تكرار العنصر المحدد (Ctrl+D)">⧉ تكرار</button>
@@ -137,7 +137,7 @@
           <p>اسحب الملف إلى هنا أو <button class="btn primary" id="openBtn2">اختر ملف PDF</button></p>
           <ul>
             <li>اكتب وارسم وظلّل فوق الصفحات، وأضف معادلات ورسوماً بمحرر الإضافة.</li>
-            <li>أضف صفحة حل (مسطّرة، مربعات، محاور…) بعد أي صفحة، وادمج ملفات PDF ورتّب الصفحات بالسحب.</li>
+            <li>أضف صفحة فارغة بعد أي صفحة، وادمج ملفات PDF ورتّب الصفحات بالسحب.</li>
             <li>«قص سؤال» يجمع أسئلة الامتحان في قائمة مرقّمة تنسخها لتطبيق راجع واحداً واحداً أو تنزّلها كلها.</li>
             <li>احفظ نسختين: للمعلم بالحلول، وللطالب بدونها.</li>
             <li>«لقطة» تقص أي جزء وتنسخه صورة لتلصقه في تطبيقك مباشرة.</li>
@@ -168,8 +168,8 @@
   </div></div>
   <div class="pop" id="pagePop" hidden><div class="menu">
     <div class="mh" id="pagePopHead">الصفحة</div>
-    <button data-pg="blank">＋ صفحة حل بعد هذه الصفحة</button>
-    <button data-pg="blankBefore">＋ صفحة حل قبل هذه الصفحة</button>
+    <button data-pg="blank">＋ صفحة فارغة بعد هذه الصفحة</button>
+    <button data-pg="blankBefore">＋ صفحة فارغة قبل هذه الصفحة</button>
     <button data-pg="insertFile">📎 إدراج صفحات من ملف PDF آخر (دمج)…</button>
     <button data-pg="extract">⇪ استخراج إلى ملف PDF جديد…</button>
     <button data-pg="dup">⧉ تكرار</button>
@@ -178,7 +178,7 @@
     <button data-pg="uncrop">↺ إزالة القص</button>
     <button data-pg="up">▲ نقل للأعلى</button>
     <button data-pg="down">▼ نقل للأسفل</button>
-    <button data-pg="sol">🎓 تعليمها كصفحة حل</button>
+    <button data-pg="sol" hidden>🎓 تعليمها كصفحة حل</button>
     <button data-pg="clear">⌫ مسح الإضافات</button>
     <button data-pg="del" class="danger">🗑 حذف</button>
     <div class="mh">تحديد الصفحات</div>
@@ -252,6 +252,6 @@
   <script src="js/pdf/annot.js?v=5.9.0"></script>
   <script src="js/pdf/ocr.js?v=5.9.0"></script>
   <script src="js/pdf/cmdk.js?v=5.9.1"></script>
-  <script src="js/pdf/modern.js?v=5.10.0"></script>
+  <script src="js/pdf/modern.js?v=5.10.2"></script>
 </body>
 </html>

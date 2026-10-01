@@ -60,6 +60,7 @@
       info.textContent = s.pdf ? (n ? 'محدد: ' + n + ' عنصر · ' : '') + cnt + ' عنصر في الملف' : '';
     }, 400);
   }
+  if (sb) { var vb = document.createElement('span'); vb.className = 'ver'; vb.textContent = 'v5.10.2'; vb.title = 'إصدار الاستوديو — إن لم يظهر هذا الرقم فالصفحة قديمة في ذاكرة المتصفح (Ctrl+F5)'; sb.appendChild(vb); }
   apply();
   window.PdfSkin = { state: st, apply: apply };
 })();
