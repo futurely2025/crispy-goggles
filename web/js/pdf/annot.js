@@ -19,7 +19,7 @@
   function deco() { S.deco = S.deco || {}; return S.deco; }
 
   // ================================================================ object rendering
-  var REGION = { redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1 };
+  var REGION = { edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1 };
   var FIELD_LABEL = { text: 'حقل نص', check: 'مربع اختيار', radio: 'زر خيار', combo: 'قائمة منسدلة', list: 'قائمة', button: 'زر' };
   var FIELD_ICON = { text: 'Aa', check: '☑', radio: '◉', combo: '▾', list: '☰', button: '▭' };
   function inner(o, data, exporting) {
@@ -36,9 +36,9 @@
         if (!export_ && o.c) out = '<g><title>' + esc(o.c) + '</title>' + out + '</g>';
         return out;
       case 'redact':
-        if (export_) return '';
-        var solid = S.redPrev;
-        out = '<rect x="' + f2(o.x) + '" y="' + f2(o.y) + '" width="' + f2(o.w) + '" height="' + f2(o.h) + '" fill="' + (o.fc || '#000') + '" fill-opacity="' + (solid ? 1 : 0.34) + '" stroke="#c2352b" stroke-width="1.2" stroke-dasharray="' + (solid ? '0' : '5 3') + '"/>';
+        if (export_) return o.soft ? '<rect x="' + f2(o.x) + '" y="' + f2(o.y) + '" width="' + f2(o.w) + '" height="' + f2(o.h) + '" fill="' + (o.fc || '#fff') + '"/>' : '';
+        var solid = S.redPrev || o.cover;
+        out = '<rect x="' + f2(o.x) + '" y="' + f2(o.y) + '" width="' + f2(o.w) + '" height="' + f2(o.h) + '" fill="' + (o.fc || '#000') + '" fill-opacity="' + (solid ? 1 : 0.34) + '"' + (o.cover ? '' : ' stroke="#c2352b" stroke-width="1.2" stroke-dasharray="' + (solid ? '0' : '5 3') + '"') + '/>';
         if (o.label) out += '<text x="' + f2(o.x + o.w / 2) + '" y="' + f2(o.y + o.h / 2 + 4) + '" text-anchor="middle" font-size="' + f2(Math.max(7, Math.min(14, o.h * 0.6))) + '" fill="#fff" font-family="Amiri, serif">' + esc(o.label) + '</text>';
         return out;
       case 'link':
@@ -73,6 +73,7 @@
   function region(tool, i, r) {
     var p = S.pages[i], click = r.w < 5 && r.h < 5;
     var o;
+    if (tool === 'edittext') { editTextRegion(i, r); return; }
     if (tool === 'redact') { if (click) return; o = { id: P.uid(), t: 'redact', x: r.x, y: r.y, w: r.w, h: r.h, fc: '#000000', label: '' }; }
     else if (tool === 'link') { if (click) { r = { x: r.x - 60, y: r.y - 8, w: 120, h: 18 }; } o = { id: P.uid(), t: 'link', x: r.x, y: r.y, w: Math.max(12, r.w), h: Math.max(10, r.h), kind: 'url', url: '', pid: p.id }; }
     else {
@@ -150,6 +151,63 @@
       o.req = el.querySelector('#fr').checked; o.ro = el.querySelector('#fz').checked;
       P.changed(); P.drawOverlay(i);
     });
+  }
+
+
+  // ================================================================ edit existing text (cover + retype)
+  function pageCanvas(i) { var el = P.pageEl(i); return el && el.querySelector('canvas.pdf, canvas'); }
+  function sampleColors(i, r) {
+    var cv = pageCanvas(i), p = S.pages[i]; if (!cv || !cv.width) return { bg: '#ffffff', ink: '#000000' };
+    var k = cv.width / (P.cropOf(p).w ? p.w : p.w), g = cv.getContext('2d'); if (!g) return { bg: '#ffffff', ink: '#000000' };
+    try {
+      var x0 = Math.max(0, Math.round(r.x * k)), y0 = Math.max(0, Math.round(r.y * k)), w = Math.max(2, Math.min(cv.width - x0, Math.round(r.w * k))), h = Math.max(2, Math.min(cv.height - y0, Math.round(r.h * k)));
+      var d = g.getImageData(x0, y0, w, h).data, hist = {}, best = null, dark = null, dl = 999;
+      for (var q = 0; q < d.length; q += 4) { var key = d[q] + ',' + d[q + 1] + ',' + d[q + 2]; hist[key] = (hist[key] || 0) + 1; var lum = d[q] * 0.3 + d[q + 1] * 0.59 + d[q + 2] * 0.11; if (lum < dl) { dl = lum; dark = [d[q], d[q + 1], d[q + 2]]; } }
+      var bk = Object.keys(hist).sort(function (a, b) { return hist[b] - hist[a]; })[0].split(',').map(Number);
+      var hex = function (a) { return '#' + a.map(function (v) { return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2); }).join(''); };
+      return { bg: hex(bk), ink: dl < 120 ? hex(dark) : '#000000' };
+    } catch (e) { return { bg: '#ffffff', ink: '#000000' }; }
+  }
+  function editTextRegion(i, r) {
+    var p = S.pages[i];
+    if (p.src < 0) return P.toast('هذه صفحة فارغة — استخدم أداة النص لإضافة نص');
+    if (r.w < 4 && r.h < 4) { r = { x: r.x - 3, y: r.y - 6, w: 6, h: 12 }; var click = true; }
+    P.toast('جارٍ قراءة النص…');
+    PdfText.pageText(p).then(function (t) {
+      return P.loadSrc(p).then(function (pg) {
+        var vp = pg.getViewport({ scale: 1, rotation: (pg.rotate + p.rot) % 360 }), items = [];
+        t.items.forEach(function (it, idx) {
+          if (!it.str || !it.str.trim()) return;
+          var tr = it.transform, fh = Math.hypot(tr[2], tr[3]) || 10, w = it.width || fh * it.str.length * 0.5;
+          var q = vp.convertToViewportRectangle([tr[4], tr[5] - fh * 0.25, tr[4] + w, tr[5] + fh * 0.95]);
+          var b = { x: Math.min(q[0], q[2]), y: Math.min(q[1], q[3]), w: Math.abs(q[2] - q[0]), h: Math.abs(q[3] - q[1]), s: it.str, idx: idx, fh: fh };
+          var ox = Math.max(0, Math.min(b.x + b.w, r.x + r.w) - Math.max(b.x, r.x)), oy = Math.max(0, Math.min(b.y + b.h, r.y + r.h) - Math.max(b.y, r.y));
+          if (ox * oy > 0.35 * b.w * b.h || (click && ox > 0 && oy > 0)) items.push(b);
+        });
+        if (!items.length) { P.toast('لا يوجد نص قابل للتحرير هنا — الصفحة مصوّرة؟ استخدم «تغطية» ثم «نص»', true); return; }
+        // lines top → bottom; inside a line in reading order (right → left for Arabic)
+        items.sort(function (a, b) { return a.y - b.y; });
+        var lines = [];
+        items.forEach(function (b) { var l = lines.filter(function (L) { return Math.abs(L.cy - (b.y + b.h / 2)) < Math.max(L.h, b.h) * 0.5; })[0]; if (l) { l.items.push(b); l.cy = (l.cy * (l.items.length - 1) + b.y + b.h / 2) / l.items.length; l.h = Math.max(l.h, b.h); } else lines.push({ cy: b.y + b.h / 2, h: b.h, items: [b] }); });
+        var ar = items.filter(function (b) { return /[؀-ۿ]/.test(b.s); }).length > items.length / 2;
+        var text = lines.map(function (L) { L.items.sort(function (a, b) { return ar ? b.x - a.x : a.x - b.x; }); var s = ''; L.items.forEach(function (b, k) { s += (k && !/\s$/.test(s) ? ' ' : '') + b.s; }); return s.trim(); }).join('\n');
+        var x0 = Math.min.apply(null, items.map(function (b) { return b.x; })), y0 = Math.min.apply(null, items.map(function (b) { return b.y; })), x1 = Math.max.apply(null, items.map(function (b) { return b.x + b.w; })), y1 = Math.max.apply(null, items.map(function (b) { return b.y + b.h; }));
+        var pad = 1.5, box = { x: x0 - pad, y: y0 - pad, w: x1 - x0 + 2 * pad, h: y1 - y0 + 2 * pad };
+        var size = Math.max(7, Math.round(items.reduce(function (a, b) { return a + b.fh; }, 0) / items.length * 0.95));
+        var col = sampleColors(i, box);
+        return UI.open({ title: 'تحرير النص الموجود', body: '<p class="dlg-note">سيُغطّى النص الأصلي بلون الخلفية ويُكتب نص جديد مكانه. اختر كيف يُعامل الأصل:</p><div class="radios"><label><input type="radio" name="em" value="cover" checked> تغطية فقط (سريع، يبقى النص الأصلي مخفياً داخل الملف)</label><label><input type="radio" name="em" value="burn"> حذف نهائي (تُحوَّل الصفحة عند الحفظ إلى صورة 200 dpi)</label></div>', ok: 'تحرير' }).then(function (el) {
+          if (!el) return;
+          P.push();
+          var burn = UI.radio(el, 'em') === 'burn';
+          var cover = { id: P.uid(), t: 'redact', x: box.x, y: box.y, w: box.w, h: box.h, fc: col.bg, label: '', cover: true, soft: !burn };
+          if (!burn) P.born(cover);
+          var o = P.born({ id: P.uid(), t: 'text', x: box.x - 2, y: box.y - 1, w: Math.max(40, box.w + 8), text: text, size: size, color: col.ink, bold: false, align: ar ? 'right' : 'left', bg: 'none', font: ar ? 'Amiri' : 'Times New Roman', lh: 1.25 });
+          o.h = P.textHeight(o);
+          p.objs.push(cover, o); P.changed(); P.markThumb(i); P.drawOverlay(i); P.setTool('select'); P.select(i, o.id);
+          setTimeout(function () { P.editText(i, o); }, 60);
+        });
+      });
+    }).catch(function (e) { P.toast('تعذّر قراءة النص: ' + (e && e.message), true); });
   }
 
   // ================================================================ text markup (floating bar over a text selection)
@@ -324,10 +382,10 @@
 
   // ================================================================ export hooks
   var REDACT_Q = { dpi: 200, q: 0.92 };
-  function needsRaster(objs) { return objs.some(function (o) { return o.t === 'redact'; }); }
+  function needsRaster(objs) { return objs.some(function (o) { return o.t === 'redact' && !o.soft; }); }
   function burn(cx, k, objs, p) {
     objs.forEach(function (o) {
-      if (o.t !== 'redact') return;
+      if (o.t !== 'redact' || o.soft) return;
       cx.fillStyle = o.fc || '#000'; cx.fillRect(o.x * k, o.y * k, o.w * k, o.h * k);
       if (o.label) { cx.fillStyle = (o.fc === '#ffffff') ? '#000' : '#fff'; cx.font = Math.max(8, Math.min(14, o.h * 0.6)) * k + 'px Amiri, serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText(o.label, (o.x + o.w / 2) * k, (o.y + o.h / 2) * k); }
     });

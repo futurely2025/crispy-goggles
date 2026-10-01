@@ -93,3 +93,5 @@
 .pmain.wide2 { grid-template-columns: 236px minmax(0, 1fr); } .pmain.wide2.insp-on { grid-template-columns: 236px minmax(0, 1fr) 270px; }
 .aph { flex-wrap: wrap; } .apadd { white-space: nowrap; }
 .iempty .ibtn { display: inline-block; min-width: 150px; height: auto; padding: 8px 14px; white-space: nowrap; border-radius: 9px; }
+
+.tool-edittext .ov { cursor: text; }
