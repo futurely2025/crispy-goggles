@@ -89,19 +89,54 @@
   // under this point" lookup is delegated to MathLive (mf.getOffsetFromPoint), with the point mirrored inside the atom.
   function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
 
-  function atomUnder(sr, x, y) {
-    var els = sr.elementsFromPoint ? sr.elementsFromPoint(x, y) : [];
-    for (var i = 0; i < els.length; i++) {
-      var el = els[i];
-      if (!el.hasAttribute || !el.hasAttribute('data-atom-id')) continue;
-      if (el.querySelector('[data-atom-id]')) return null;   // a container (fraction, root…): use MathLive's own lookup
-      return el;
+  function isLeaf(el) {
+    return !el.childElementCount && el.textContent.replace(ZW, '') && !/vlist-s|ML__caret|ML__selection|ML__contains-highlight/.test(el.className);
+  }
+  // the leaf atom (a digit, a letter, an operator…) that is drawn under the point, or else the nearest one:
+  // MathLive answers "start of the formula" for a point in the gap between two atoms (operator spacing, fraction bar…)
+  function leafNear(sr, x, y) {
+    var els = sr.elementsFromPoint ? sr.elementsFromPoint(x, y) : [], i;
+    for (i = 0; i < els.length; i++) {
+      if (els[i].hasAttribute && els[i].hasAttribute('data-atom-id') && isLeaf(els[i])) return els[i];
     }
-    return null;
+    var all = sr.querySelectorAll('.ML__content [data-atom-id]'), best = null, bd = Infinity;
+    for (i = 0; i < all.length; i++) {
+      if (!isLeaf(all[i])) continue;
+      var r = all[i].getBoundingClientRect();
+      if (!r.width) continue;
+      var dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+      var dy = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+      var d = dx * dx + 4 * dy * dy;
+      if (d < bd) { bd = d; best = all[i]; }
+    }
+    return best;
   }
 
-  // logical offset (0…lastOffset) the caret should take for a pointer at screen point (x, y) in a mirrored formula
-  function offsetAt(mf, x, y) {
+  // drawn boxes of all atoms by model offset: atom k sits between caret positions k-1 and k
+  function atomBoxes(mf) {
+    var out = [], last = mf.lastOffset;
+    for (var k = 1; k <= last; k++) {
+      var info = mf.getElementInfo(k), b = info && info.bounds;
+      if (b && b.width > 0 && b.height > 0) out.push({ k: k, l: b.left, r: b.right, t: b.top, b: b.bottom });
+    }
+    return out;
+  }
+  function modelOffsetOf(boxes, r) {
+    // MathLive reports boxes a pixel or two off the DOM rectangles (more when an atom is selected), so match loosely
+    var best = -1, bd = 1e9, cy = (r.top + r.bottom) / 2;
+    for (var i = 0; i < boxes.length; i++) {
+      var q = boxes[i];
+      if (Math.abs((q.r - q.l) - r.width) > 5 || Math.abs((q.b - q.t) - r.height) > 8) continue;
+      var d = Math.abs(q.l - r.left) + Math.abs(q.r - r.right) + Math.abs((q.t + q.b) / 2 - cy);
+      if (d < bd) { bd = d; best = q.k; }
+    }
+    return bd <= 8 ? best : -1;
+  }
+
+  // logical offset (0…lastOffset) the caret should take for a pointer at screen point (x, y) in a mirrored formula.
+  // ctx caches the atom boxes while a drag is in progress. MathLive's getOffsetFromPoint is not used for the answer:
+  // it returns the end of the selection when a selection already exists, which broke dragging.
+  function offsetAt(mf, x, y, ctx) {
     var sr = mf.shadowRoot, latex = sr.querySelector('.ML__latex');
     if (!latex) return mf.position;
     var n = latex.getBoundingClientRect();
@@ -110,13 +145,20 @@
     // the formula starts at its right end: the empty space to the right is "before everything", to the left "after"
     if (x >= n.right) return 0;
     if (x <= n.left) return mf.lastOffset;
-    var el = atomUnder(sr, x, y);
-    if (el) {
-      var r = el.getBoundingClientRect();
-      if (r.width > 0) x = r.left + r.right - x;     // swap the halves of this atom
+    var el = leafNear(sr, x, y);
+    if (!el) return mf.position;
+    var r = el.getBoundingClientRect();
+    var boxes = (ctx && ctx.boxes) || atomBoxes(mf);
+    if (ctx) ctx.boxes = boxes;
+    var k = modelOffsetOf(boxes, r);
+    if (k < 0) {
+      // not a plain atom (e.g. the big bracket of a matrix): let MathLive look it up, aiming at the wanted half
+      var wx = r.left + r.width * (clamp(x, r.left, r.right) > (r.left + r.right) / 2 ? 0.25 : 0.75);
+      var o = mf.getOffsetFromPoint(wx, clamp(y, r.top + 0.5, r.bottom - 0.5), { bias: 0 });
+      return o < 0 ? mf.position : o;
     }
-    var off = mf.getOffsetFromPoint(x, y, { bias: 0 });
-    return off < 0 ? mf.position : off;
+    // in the mirrored formula the right half of an atom is its "before" side
+    return clamp(x, r.left, r.right) > (r.left + r.right) / 2 ? k - 1 : k;
   }
 
   function setRange(mf, anchor, focus) {
@@ -147,7 +189,8 @@
 
       var sel = mf.selection, rg = sel.ranges && sel.ranges[0];
       var anchor;
-      var hit = offsetAt(mf, e.clientX, e.clientY);
+      var ctx = {};
+      var hit = offsetAt(mf, e.clientX, e.clientY, ctx);
       if (e.shiftKey && rg) anchor = sel.direction === 'backward' ? rg[1] : rg[0];
       else anchor = hit;
       setRange(mf, anchor, hit);
@@ -162,7 +205,7 @@
         if (!moved && Math.abs(ev.clientX - e.clientX) < 3 && Math.abs(ev.clientY - e.clientY) < 3) return;
         moved = true;
         ev.preventDefault();
-        setRange(mf, anchor, offsetAt(mf, ev.clientX, ev.clientY));
+        setRange(mf, anchor, offsetAt(mf, ev.clientX, ev.clientY, ctx));
       }
       function up(ev) {
         if (ev.pointerId !== e.pointerId) return;
@@ -210,7 +253,8 @@
       mf.dataset.rtl = on ? '1' : '0';
       apply(mf);
     },
-    refresh: apply
+    refresh: apply,
+    offsetAt: offsetAt
   };
   global.MathFieldRTL = MathFieldRTL;
 })(window);
