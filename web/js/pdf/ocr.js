@@ -85,18 +85,13 @@
 
   // ================================================================ result dialog
   function show(i, r, res, thumb) {
-    var text = res.text, conf = Math.round(res.conf), dub = doubtful(res), fixes = res.lines.reduce(function (n, l) { return n + (l.fixes ? l.fixes.length : 0); }, 0), voted = res.lines.reduce(function (n, l) { return n + (l.voted || 0); }, 0);
+    var text = res.text, conf = Math.round(res.conf), fixes = res.lines.reduce(function (n, l) { return n + (l.fixes ? l.fixes.length : 0); }, 0), voted = res.lines.reduce(function (n, l) { return n + (l.voted || 0); }, 0);
     var tone = conf >= 90 ? '#1f8a4c' : conf >= 75 ? '#b8860b' : '#c2352b';
     UI.open({
       title: 'النص المستخرج', wide: true, ok: 'إدراج كنص على الصفحة', body:
         (thumb ? '<div class="ocr-src"><img src="' + thumb + '" alt="المنطقة الأصلية"></div>' : '') +
-        '<p class="dlg-note ocr-stat"><b style="color:' + tone + '">الثقة ' + conf + '%</b> · ' + res.lines.length + ' سطر · ' + (dub.length ? dub.length + ' كلمة تحتاج مراجعة · ' : 'لا كلمات مشكوك فيها · ') +
-        (fixes ? 'صُحّحت ' + fixes + ' كلمة آلياً · ' : '') + (voted ? 'حُسمت ' + voted + ' كلمة بين عدة قراءات · ' : '') + (Math.abs(res.angle) >= 0.2 ? 'عُدّل ميل الصورة ' + res.angle.toFixed(1) + '° · ' : '') + (res.ms / 1000).toFixed(1) + ' ث</p>' +
+        '<p class="dlg-note ocr-stat"><b style="color:' + tone + '">الثقة ' + conf + '%</b> · ' + res.lines.length + ' سطر · ' +         (fixes ? 'صُحّحت ' + fixes + ' كلمة آلياً · ' : '') + (voted ? 'حُسمت ' + voted + ' كلمة بين عدة قراءات · ' : '') + (Math.abs(res.angle) >= 0.2 ? 'عُدّل ميل الصورة ' + res.angle.toFixed(1) + '° · ' : '') + (res.ms / 1000).toFixed(1) + ' ث</p>' +
         '<textarea id="ocrT" rows="8" dir="auto" style="font-size:16px;line-height:1.7">' + esc(text) + '</textarea>' +
-        (dub.length ? '<div class="ocr-rev"><div class="ocr-revh">كلمات للمراجعة <small>— انقر الكلمة لتحديدها في النص، أو اختر تصحيحاً مقترحاً</small></div>' + dub.map(function (w, k) {
-          var sg = suggestions(w);
-          return '<div class="ocr-w" data-k="' + k + '"><button type="button" class="ocr-wd" data-a="go" title="تحديد في النص">' + esc(w.text) + '<i>' + w.conf + '%</i></button>' + sg.map(function (x) { return '<button type="button" class="ocr-sg" data-a="fix" data-t="' + esc(x) + '">' + esc(x) + '</button>'; }).join('') + '</div>';
-        }).join('') + '</div>' : '') +
         '<div class="fld row ocr-opts"><span>الجودة</span>' + sel('ocrM', [['fast', MODE_NAMES.fast], ['accurate', MODE_NAMES.accurate], ['max', MODE_NAMES.max]], cfg.mode) +
         '<span>اللغة</span>' + sel('ocrL', [['auto', 'تلقائي'], ['ara', 'عربي'], ['ara+eng', 'عربي + إنجليزي'], ['eng', 'إنجليزي']], cfg.lang) +
         '<span>الأرقام</span>' + sel('ocrD', [['keep', 'كما هي'], ['western', '0 1 2 3'], ['indic', '٠ ١ ٢ ٣']], cfg.digits) +
@@ -108,14 +103,6 @@
         box.querySelector('#ocrCopy').onclick = function () { ta.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ } if (!ok && navigator.clipboard) navigator.clipboard.writeText(ta.value); P.toast('نُسخ النص'); };
         box.querySelector('#ocrTxt').onclick = function () { P.download(new Blob(['﻿' + ta.value], { type: 'text/plain;charset=utf-8' }), (S.name || 'ocr').replace(/\.pdf$/i, '') + '-ocr.txt'); };
         el.querySelector('#ocrAgain').onclick = function () { cfg.mode = el.querySelector('#ocrM').value; cfg.lang = el.querySelector('#ocrL').value; cfg.digits = el.querySelector('#ocrD').value; saveCfg(); close(null); run(i, r); };
-        [].forEach.call(el.querySelectorAll('.ocr-w'), function (row) {
-          var w = dub[+row.dataset.k];
-          row.onclick = function (e) {
-            var b = e.target.closest('button'); if (!b) return;
-            if (b.dataset.a === 'go') locate(ta, w.text);
-            else if (b.dataset.a === 'fix') { if (replaceWord(ta, w.text, b.dataset.t)) { w.text = b.dataset.t; row.classList.add('done'); b.parentNode.querySelector('.ocr-wd').firstChild.nodeValue = b.dataset.t; } else P.toast('لم أجد الكلمة في النص (ربما عُدّلت)'); }
-          };
-        });
       }
     }).then(function (el) {
       if (!el) return;
