@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+  <Id>e9182039-0176-4a6e-a259-145b24db2436</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Arabic Math</ProviderName>
+  <DefaultLocale>ar-SA</DefaultLocale>
+  <DisplayName DefaultValue="معادلات عربية"/>
+  <Description DefaultValue="كتابة المعادلات الرياضية العربية بصيغة LaTeX: من اليمين لليسار، جا جتا طا، أرقام عربية وهندية، مع إمكانية التحرير لاحقاً."/>
+  <IconUrl DefaultValue="{{BASE_URL}}icons/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="{{BASE_URL}}icons/icon-64.png"/>
+  <SupportUrl DefaultValue="{{BASE_URL}}taskpane.html"/>
+  <AppDomains>
+    <AppDomain>{{ORIGIN}}</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Document"/>
+  </Hosts>
+  <Requirements>
+    <Sets DefaultMinVersion="1.1">
+      <Set Name="WordApi" MinVersion="1.3"/>
+    </Sets>
+  </Requirements>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="{{BASE_URL}}taskpane.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+          <FunctionFile resid="Commands.Url"/>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="ArabicMath.Tab">
+              <Group id="ArabicMath.Group">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="ArabicMath.OpenEditor">
+                  <Label resid="Button.Label"/>
+                  <Supertip>
+                    <Title resid="Button.Label"/>
+                    <Description resid="Button.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ArabicMathPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Group id="QParser.Group">
+                <Label resid="QP.Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="QP.Icon.16"/>
+                  <bt:Image size="32" resid="QP.Icon.32"/>
+                  <bt:Image size="80" resid="QP.Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="QParser.Open">
+                  <Label resid="QP.Button.Label"/>
+                  <Supertip>
+                    <Title resid="QP.Button.Label"/>
+                    <Description resid="QP.Button.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="QP.Icon.16"/>
+                    <bt:Image size="32" resid="QP.Icon.32"/>
+                    <bt:Image size="80" resid="QP.Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>QParserPane</TaskpaneId>
+                    <SourceLocation resid="QP.Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="Tab.Label"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="{{BASE_URL}}icons/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="{{BASE_URL}}icons/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="{{BASE_URL}}icons/icon-80.png"/>
+        <bt:Image id="QP.Icon.16" DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-16.png"/>
+        <bt:Image id="QP.Icon.32" DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-32.png"/>
+        <bt:Image id="QP.Icon.80" DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Commands.Url" DefaultValue="{{BASE_URL}}commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="{{BASE_URL}}taskpane.html"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="{{BASE_URL}}taskpane.html"/>
+        <bt:Url id="QP.Taskpane.Url" DefaultValue="{{BASE_URL}}qparser.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="معادلات عربية جاهزة"/>
+        <bt:String id="Tab.Label" DefaultValue="معادلات عربية"/>
+        <bt:String id="Group.Label" DefaultValue="المعادلات"/>
+        <bt:String id="Button.Label" DefaultValue="محرر المعادلات"/>
+        <bt:String id="QP.Group.Label" DefaultValue="الأسئلة"/>
+        <bt:String id="QP.Button.Label" DefaultValue="محلل الأسئلة"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="افتح تبويب (معادلات عربية) ثم اضغط (محرر المعادلات)."/>
+        <bt:String id="Button.Tooltip" DefaultValue="إدراج أو تحرير معادلة رياضية عربية (LaTeX) من اليمين لليسار."/>
+        <bt:String id="QP.Button.Tooltip" DefaultValue="تحليل أسئلة الصح والخطأ والاختيار من متعدد والوصل في المستند المفتوح."/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
