@@ -55,7 +55,7 @@ try {
     $manifest = Join-Path $App 'manifest.xml'
     [IO.File]::WriteAllText($manifest, $xml, (New-Object Text.UTF8Encoding($false)))
     $key = 'HKCU:\Software\Microsoft\Office\16.0\WEF\Developer'
-    New-Item -Path $key -Force | Out-Null
+    if (-not (Test-Path $key)) { New-Item -Path $key | Out-Null }   # بدون -Force: لا يمسح إضافات أخرى مسجّلة
     New-ItemProperty -Path $key -Name $AddinId -Value $manifest -PropertyType String -Force | Out-Null
     $wef = Join-Path $env:LOCALAPPDATA 'Microsoft\Office\16.0\Wef'
     if (Test-Path $wef) { Get-ChildItem $wef -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue }

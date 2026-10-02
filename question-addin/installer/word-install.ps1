@@ -43,7 +43,7 @@ try {
 
     # ---- 2) السماح المؤقت بإنشاء الماكرو
     Step '3/6' 'السماح المؤقت بإنشاء الماكرو / Temporarily allowing macro creation'
-    New-Item -Path $SecKey -Force | Out-Null
+    if (-not (Test-Path $SecKey)) { New-Item -Path $SecKey | Out-Null }
     $prevVbom = (Get-ItemProperty -Path $SecKey -Name AccessVBOM -ErrorAction SilentlyContinue).AccessVBOM
     Set-ItemProperty -Path $SecKey -Name AccessVBOM -Value 1 -Type DWord
     $touchedVbom = $true

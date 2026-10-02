@@ -62,7 +62,7 @@ try {
 
     # 5) register for the current user (Word 2016 / 2019 / 2021 / 365 all use 16.0) --
     $key = 'HKCU:\Software\Microsoft\Office\16.0\WEF\Developer'
-    New-Item -Path $key -Force | Out-Null
+    if (-not (Test-Path $key)) { New-Item -Path $key | Out-Null }   # بدون -Force: لا يمسح إضافات أخرى مسجّلة
     New-ItemProperty -Path $key -Name $AddinId -Value $manifest -PropertyType String -Force | Out-Null
 
     # 6) clear the Office add-in cache so the new version is picked up -----------------

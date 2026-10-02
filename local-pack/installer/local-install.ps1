@@ -55,13 +55,15 @@ try {
     try { $r = Invoke-WebRequest -Uri ($Base + 'qparser.html') -UseBasicParsing -TimeoutSec 15; Ok ("https://localhost يعمل (الحالة " + $r.StatusCode + ')') }
     catch { Warn ('اختبار https://localhost فشل: ' + $_.Exception.Message) }
 
+    $key = 'HKCU:\Software\Microsoft\Office\16.0\WEF\Developer'
+    $before = @()
+    if (Test-Path $key) { $before = @((Get-ItemProperty $key).PSObject.Properties | Where-Object { $_.Name -match '^[0-9a-f]{8}-' } | ForEach-Object { $_.Name }) }
     Step '[6/8] تسجيل الإضافة في Word (معرّف مستقل)'
     $tpl = [IO.File]::ReadAllText((Join-Path $Here 'manifest.template.xml'), [Text.Encoding]::UTF8)
     $xml = $tpl.Replace('{{BASE_URL}}', $Base).Replace('{{ORIGIN}}', $Base.TrimEnd('/'))
     $manifest = Join-Path $App 'manifest.xml'
     [IO.File]::WriteAllText($manifest, $xml, (New-Object Text.UTF8Encoding($false)))
-    $key = 'HKCU:\Software\Microsoft\Office\16.0\WEF\Developer'
-    New-Item -Path $key -Force | Out-Null
+    if (-not (Test-Path $key)) { New-Item -Path $key | Out-Null }   # بدون -Force: لا يمسح إضافات أخرى مسجّلة
     New-ItemProperty -Path $key -Name $AddinId -Value $manifest -PropertyType String -Force | Out-Null
     Ok $manifest
 
@@ -76,6 +78,9 @@ try {
         $exists = Test-Path $_.Value
         Write-Host ('    ' + $_.Name + '  ->  ' + $_.Value + $(if ($exists) { '' } else { '   (الملف غير موجود!)' }))
     }
+    $after = @($props.PSObject.Properties | Where-Object { $_.Name -match '^[0-9a-f]{8}-' } | ForEach-Object { $_.Name })
+    $lost = @($before | Where-Object { $after -notcontains $_ })
+    if ($lost.Count) { Warn ('تنبيه: اختفت إضافات كانت مسجّلة: ' + ($lost -join ', ')) } else { Ok 'لم تُمس أي إضافة أخرى' }
     Write-Host ''
     Write-Host '  ✔ اكتمل. افتح Word الآن. يجب أن يظهر تبويب (محلل الأسئلة) بجانب (معادلات عربية).' -ForegroundColor Green
     Write-Host '  إن لم يظهر: صوّر هذه النافذة (أو انسخ ما فيها) وأرسلها لي.'
