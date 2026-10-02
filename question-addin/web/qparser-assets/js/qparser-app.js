@@ -65,6 +65,12 @@
       function (err) { say('تعذرت قراءة المستند: ' + ((err && err.message) || err), true); });
   }
   $('docBtn').onclick = function () { readDocument(); };
+  // مستند محقون من زر Word (القالب المثبّت): <script id="qp-xml"> + <meta id="qp-name">
+  var injected = document.getElementById('qp-xml');
+  if (injected) {
+    var nm = document.getElementById('qp-name');
+    fromXml(injected.textContent, Q.examNameFromFilename(nm ? nm.getAttribute('content') : ''));
+  }
   if (window.Office && Office.onReady) {
     Office.onReady(function (info) {
       if (info && info.host === Office.HostType.Word) { inWord = true; $('docBtn').hidden = false; readDocument(); }
