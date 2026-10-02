@@ -119,6 +119,18 @@
       '</span></summary><div class="q-body">' + body + '</div></details>';
   }
 
+  function matchCard(m) {
+    var rows = m.pairs.map(function (p) {
+      return '<tr><td><b>' + p.num + '</b> ' + esc(p.key) + '</td><td>← ' + esc(p.value) + '</td></tr>';
+    }).join('');
+    return '<details class="q-card" open><summary><span class="q-n m">' + m.num + '–' + m.numTo + '</span><span class="q-t">' + esc(m.question) +
+      '</span><span class="q-tags"><span class="q-tag">' + esc(m.difficulty) + '</span></span></summary><div class="q-body">' +
+      '<table class="q-pairs"><thead><tr><th>المجموعة أ</th><th>المجموعة ب</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      (m.shrah ? '<div class="q-info b"><small>🎯 الشرح</small>' + esc(m.shrah) + '</div>' : '') +
+      (m.explanation ? '<div class="q-info y"><small>💡 التوضيح العلمي</small>' + esc(m.explanation) + '</div>' : '') +
+      '<div class="q-src">📚 ' + esc(m.src) + (m.time ? ' | ⏰ ' + esc(m.time) : '') + '</div></div></details>';
+  }
+
   function render() {
     var res = state.res, cat = category(), csv = Q.csvFiles(res, cat);
     var all = res.tf.concat(res.mcq), nW = all.filter(function (r) { return r.warn && r.warn.length; }).length, nR = res.dups.removed.length;
@@ -126,15 +138,19 @@
     $('out').hidden = false;
     $('stats').innerHTML = '<span class="q-chip">الكل ' + all.length + '</span><span class="q-chip">صح/خطأ ' + res.tf.length + '</span>' +
       '<span class="q-chip">اختيار ' + res.mcq.length + '</span>' +
+      (res.match.length ? '<span class="q-chip">وصل ' + res.match.length + ' كتلة</span>' : '') +
       (nW ? '<span class="q-chip w">⚠️ تحتاج مراجعة ' + nW + '</span>' : '') +
       (nR ? '<span class="q-chip d">🔁 مكررة ' + nR + '</span>' : '<span class="q-chip">✓ لا تكرار</span>') +
       (res.errors.length ? '<span class="q-chip e">🛑 ناقصة ' + res.errors.length + '</span>' : '');
     var dl = $('dl'); dl.innerHTML = '';
     dl.appendChild(dlBtn('TF (' + res.tf.length + ')', 'tf', stem, csv));
     dl.appendChild(dlBtn('MCQ (' + res.mcq.length + ')', 'mcq', stem, csv));
+    if (res.match.length) dl.appendChild(dlBtn('وصل (' + res.match.length + ')', 'match', stem, csv));
     dl.appendChild(dlBtn('الكل (' + all.length + ')', 'all', stem, csv));
     dl.appendChild(dlBtn('المُنقَّى (' + res.kept.length + ')', 'clean', stem, csv));
-    var tabs = [['tf', '✅ صح/خطأ ' + res.tf.length], ['mcq', '🧩 اختيار ' + res.mcq.length], ['dup', '🔍 التكرار ' + nR]];
+    var tabs = [['tf', '✅ صح/خطأ ' + res.tf.length], ['mcq', '🧩 اختيار ' + res.mcq.length]];
+    if (res.match.length) tabs.push(['match', '🔀 وصل ' + res.match.length]);
+    tabs.push(['dup', '🔍 التكرار ' + nR]);
     if (res.errors.length) tabs.push(['err', '🛑 أخطاء ' + res.errors.length]);
     if (!tabs.some(function (t) { return t[0] === state.tab; })) state.tab = 'tf';
     $('tabs').innerHTML = tabs.map(function (t) { return '<button class="q-tab' + (state.tab === t[0] ? ' on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('');
@@ -142,6 +158,7 @@
     var html = '';
     if (state.tab === 'tf') html = res.tf.map(function (r) { return card(r, res.dups.removed); }).join('');
     else if (state.tab === 'mcq') html = res.mcq.map(function (r) { return card(r, res.dups.removed); }).join('');
+    else if (state.tab === 'match') html = res.match.map(matchCard).join('');
     else if (state.tab === 'dup') {
       html = res.dups.groups.length ? res.dups.groups.map(function (g, gi) {
         return '<div class="q-group"><b>مجموعة ' + (gi + 1) + ' — ' + g.length + ' أسئلة متشابهة</b>' + g.map(function (i, k) {

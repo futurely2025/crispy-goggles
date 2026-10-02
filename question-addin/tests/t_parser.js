@@ -46,10 +46,18 @@ const m = Q.analyze([
 ], 'x');
 assert.strictEqual(m.errors.length, 0);
 assert.strictEqual(m.tf[0].difficulty, 'سهل');
-assert.strictEqual(m.mcq.length, 2);
-assert.deepStrictEqual(m.mcq[0].options.slice(0, 2), ['أصدرها محمد داوود عام 1898م', 'بموجبه تم تقسيم ليبيا']);
-assert.strictEqual(m.mcq[1].correct_answer, 'بموجبه تم تقسيم ليبيا');
-assert.strictEqual(m.mcq[1].shrah, 'شرح الثانية.');
-assert.strictEqual(m.mcq[0].time, '90 ثانية');
+assert.strictEqual(m.mcq.length, 0);
+assert.strictEqual(m.match.length, 1);
+assert.strictEqual(m.match[0].pairs.length, 2);
+assert.strictEqual(m.match[0].pairs[1].value, 'بموجبه تم تقسيم ليبيا');
+assert.strictEqual(m.match[0].time, '90 ثانية');
+assert.ok(Q.csvFiles(m, 'x').match.split('\r\n')[0].indexOf('pairs_key_5') > 0);
+
+// flattened single-line paste with "←" and "o" bullets
+const flat = Q.analyze(Q.blocksFromText('أسئلة الوصل (المزاوجة) س51) أ ← ب س52) ج ← د الشرح: o   أ: شرح أ. o   ج: شرح ج. التوضيح: ت المصدر المجمع: م الوقت المثالي لحل السؤال: 60 ثانية صعوبة السؤال: سهل'), 'x');
+assert.strictEqual(flat.match.length, 1);
+assert.strictEqual(flat.match[0].pairs.length, 2);
+assert.strictEqual(flat.match[0].src, 'م');
+assert.strictEqual(flat.match[0].difficulty, 'سهل');
 assert.ok(Q.csvFiles(r, 'امتحان تجريبي').all.startsWith('\ufeffmark,question'));
 console.log('questions parser: all tests passed');
