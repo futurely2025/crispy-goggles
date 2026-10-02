@@ -1,6 +1,6 @@
 // node tests/t_parser.js  — unit tests for web/js/questions/parser.js (no browser needed)
 const assert = require('assert');
-const Q = require('../web/js/parser.js');
+const Q = require('../web/qparser-assets/js/qparser-core.js');
 
 const p = (...runs) => ({ k: 'p', runs });
 const blocks = [

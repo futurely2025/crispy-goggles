@@ -41,9 +41,9 @@ try {
     # 2) check that the add-in files are reachable ---------------------------------
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $null = Invoke-WebRequest -Uri ($url + 'taskpane.html') -UseBasicParsing -TimeoutSec 20
+        $null = Invoke-WebRequest -Uri ($url + 'qparser.html') -UseBasicParsing -TimeoutSec 20
     } catch {
-        if (-not (Ask-YesNo "تعذر فتح الرابط:`n${url}taskpane.html`n`nتأكد أن مجلد web مرفوع على الخادم.`nهل تريد المتابعة بالتثبيت رغم ذلك؟")) { exit 1 }
+        if (-not (Ask-YesNo "تعذر فتح الرابط:`n${url}qparser.html`n`nتأكد أن مجلد web مرفوع على الخادم.`nهل تريد المتابعة بالتثبيت رغم ذلك؟")) { exit 1 }
     }
 
     # 3) Word must be closed -------------------------------------------------------

@@ -10,9 +10,9 @@
   <DefaultLocale>ar-SA</DefaultLocale>
   <DisplayName DefaultValue="محلل الأسئلة"/>
   <Description DefaultValue="يحلل أسئلة الصح والخطأ والاختيار من متعدد من مستند Word، ويكشف التكرار، ويصدّر ملفات CSV."/>
-  <IconUrl DefaultValue="{{BASE_URL}}icons/icon-32.png"/>
-  <HighResolutionIconUrl DefaultValue="{{BASE_URL}}icons/icon-64.png"/>
-  <SupportUrl DefaultValue="{{BASE_URL}}taskpane.html"/>
+  <IconUrl DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-64.png"/>
+  <SupportUrl DefaultValue="{{BASE_URL}}qparser.html"/>
   <AppDomains>
     <AppDomain>{{ORIGIN}}</AppDomain>
   </AppDomains>
@@ -25,7 +25,7 @@
     </Sets>
   </Requirements>
   <DefaultSettings>
-    <SourceLocation DefaultValue="{{BASE_URL}}taskpane.html"/>
+    <SourceLocation DefaultValue="{{BASE_URL}}qparser.html"/>
   </DefaultSettings>
   <Permissions>ReadDocument</Permissions>
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
@@ -72,14 +72,14 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16" DefaultValue="{{BASE_URL}}icons/icon-16.png"/>
-        <bt:Image id="Icon.32" DefaultValue="{{BASE_URL}}icons/icon-32.png"/>
-        <bt:Image id="Icon.80" DefaultValue="{{BASE_URL}}icons/icon-80.png"/>
+        <bt:Image id="Icon.16" DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="{{BASE_URL}}qparser-assets/icons/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="{{BASE_URL}}commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="{{BASE_URL}}taskpane.html"/>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="{{BASE_URL}}taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="{{BASE_URL}}qparser-commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="{{BASE_URL}}qparser.html"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="{{BASE_URL}}qparser.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="محلل الأسئلة جاهز"/>
