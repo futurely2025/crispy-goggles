@@ -29,15 +29,23 @@
   function fromXml(xml, name) {
     try { load(Q.blocksFromXml(xml), name); } catch (e) { say('تعذرت قراءة الملف: ' + (e.message || e), true); }
   }
-  $('file').onchange = function () {
-    var f = this.files[0];
+  function readFile(f) {
     if (!f) return;
+    if (!/\.docx$/i.test(f.name)) { say('الملف يجب أن يكون Word بامتداد .docx', true); return; }
     say('جارٍ قراءة الملف…');
     JSZip.loadAsync(f).then(function (z) { return z.file('word/document.xml').async('string'); })
       .then(function (xml) { fromXml(xml, Q.examNameFromFilename(f.name)); })
       .catch(function () { say('الملف ليس مستند Word صالحاً (.docx).', true); });
-    this.value = '';
-  };
+  }
+  $('file').onchange = function () { readFile(this.files[0]); this.value = ''; };
+  // سحب وإفلات ملف Word في أي مكان من الصفحة
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); document.body.classList.add('q-drop'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    document.addEventListener(ev, function (e) { e.preventDefault(); document.body.classList.remove('q-drop'); });
+  });
+  document.addEventListener('drop', function (e) { if (e.dataTransfer && e.dataTransfer.files.length) readFile(e.dataTransfer.files[0]); });
   $('fileBtn').onclick = function () { $('file').click(); };
   $('pasteBtn').onclick = function () { $('pasteBox').hidden = !$('pasteBox').hidden; };
   $('pasteGo').onclick = function () { load(Q.blocksFromText($('pasteTxt').value), ''); };
@@ -108,7 +116,7 @@
   function render() {
     var res = state.res, cat = category(), csv = Q.csvFiles(res, cat);
     var all = res.tf.concat(res.mcq), nW = all.filter(function (r) { return r.warn && r.warn.length; }).length, nR = res.dups.removed.length;
-    var stem = (state.blocks && $('cat').value.trim() || 'questions').replace(/[\\/:*?"<>|]/g, '_');
+    var stem = 'questions';   // اسم ASCII ثابت: يضمن حفظ الملف بامتداد .csv في كل المتصفحات
     $('out').hidden = false;
     $('stats').innerHTML = '<span class="q-chip">الكل ' + all.length + '</span><span class="q-chip">صح/خطأ ' + res.tf.length + '</span>' +
       '<span class="q-chip">اختيار ' + res.mcq.length + '</span>' +

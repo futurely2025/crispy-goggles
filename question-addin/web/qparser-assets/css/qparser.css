@@ -59,3 +59,7 @@ body.q-page { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.
 .q-err { background: #fff; border: 1.5px solid var(--danger); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
 .q-err li { color: var(--danger); }
 @media (min-width: 700px) { .q-opts { grid-template-columns: 1fr 1fr; } }
+
+body.q-drop .q-wrap { outline: 3px dashed var(--tq); outline-offset: -6px; background: var(--tq-soft); }
+.q-hero { text-align: center; padding: 18px 10px; color: var(--muted); }
+.q-hero b { color: var(--tq-3); }
