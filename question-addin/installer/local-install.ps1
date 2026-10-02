@@ -13,6 +13,10 @@ $opts   = [System.Windows.Forms.MessageBoxOptions]::RightAlign -bor [System.Wind
 function Show-Msg([string]$t, [string]$icon = 'Information') { [void][System.Windows.Forms.MessageBox]::Show($t, $Title, 'OK', $icon, 'Button1', $opts) }
 function Ask-YesNo([string]$t) { return [System.Windows.Forms.MessageBox]::Show($t, $Title, 'YesNo', 'Question', 'Button1', $opts) -eq 'Yes' }
 
+New-Item -ItemType Directory -Force -Path $App | Out-Null
+$Log = Join-Path $App 'install.log'
+try { Start-Transcript -Path $Log -Force | Out-Null } catch { }
+
 try {
     while (Get-Process -Name WINWORD -ErrorAction SilentlyContinue) {
         if (-not (Ask-YesNo "برنامج Word مفتوح الآن.`nاحفظ عملك وأغلق Word ثم اضغط (نعم) للمتابعة.")) { exit 1 }
@@ -62,9 +66,24 @@ try {
     # بعض نسخ Word القديمة تمنع الاتصال بـ localhost حتى يُستثنى (قد يفشل بصمت وهذا عادي)
     try { & CheckNetIsolation LoopbackExempt -a -n=microsoft.win32webviewhost_cw5n1h2txyewy 2>$null | Out-Null } catch { }
 
-    Show-Msg "تم التثبيت بنجاح ✔`n`nافتح Word ثم تبويب (محلل الأسئلة) ثم زر (تحليل الأسئلة).`nيعمل الخادم في الخلفية على جهازك فقط ويبدأ تلقائياً مع Windows."
+    # 6) اختبار ذاتي: هل يردّ الخادم عبر HTTPS والشهادة موثوقة؟
+    Start-Sleep -Seconds 2
+    $procOk = [bool](Get-Process -Name QParserServer -ErrorAction SilentlyContinue)
+    $httpsOk = $false; $httpsErr = ''
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $r = Invoke-WebRequest -Uri ($Base + 'qparser.html') -UseBasicParsing -TimeoutSec 15
+        $httpsOk = ($r.StatusCode -eq 200)
+    } catch { $httpsErr = $_.Exception.Message }
+    $report = "الخادم يعمل: " + $(if ($procOk) { 'نعم' } else { 'لا' }) + "`nاختبار https://localhost: " + $(if ($httpsOk) { 'نجح ✔' } else { 'فشل ✘ ' + $httpsErr })
+    if ($procOk -and $httpsOk) {
+        Show-Msg "تم التثبيت بنجاح ✔`n`n$report`n`nافتح Word ثم تبويب (محلل الأسئلة) ثم زر (تحليل الأسئلة)."
+    } else {
+        Show-Msg "اكتمل التثبيت لكن الاختبار الذاتي فشل ✘`n`n$report`n`nشغّل ملف Diagnose.cmd وأرسل التقرير الذي يفتح لك.`nملف السجل: $Log" 'Warning'
+    }
 }
 catch {
     Show-Msg ("حدث خطأ أثناء التثبيت:`n" + $_.Exception.Message) 'Error'
     exit 1
 }
+try { Stop-Transcript | Out-Null } catch { }

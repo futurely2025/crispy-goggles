@@ -25,7 +25,26 @@ namespace QParser
             { ".json", "application/json" }, { ".md", "text/plain; charset=utf-8" }, { ".txt", "text/plain; charset=utf-8" }
         };
 
+        static int logged = 0;
+        static string logPath;
+        static void Log(string msg)
+        {
+            try
+            {
+                if (logged++ > 200) return;
+                File.AppendAllText(logPath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "  " + msg + "\r\n");
+            }
+            catch (Exception) { }
+        }
+
         public static int Main(string[] args)
+        {
+            logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "server.log");
+            try { return Run(args); }
+            catch (Exception ex) { Log("FATAL: " + ex); return 1; }
+        }
+
+        static int Run(string[] args)
         {
             string here = AppDomain.CurrentDomain.BaseDirectory;
             webRoot = Path.GetFullPath(Path.Combine(here, "web"));
@@ -38,9 +57,11 @@ namespace QParser
             using (new Mutex(true, "QParserLocalServer_" + port, out createdNew))
             {
                 if (!createdNew) return 0;
+                Log("starting on port " + port + ", web=" + webRoot);
                 cert = new X509Certificate2(pfx, "qparser");
                 TcpListener listener = new TcpListener(IPAddress.Loopback, port);     // محلي فقط
-                try { listener.Start(); } catch (SocketException) { return 0; }
+                try { listener.Start(); } catch (SocketException ex) { Log("cannot listen: " + ex.Message); return 0; }
+                Log("listening");
                 while (true)
                 {
                     TcpClient client;
@@ -78,7 +99,7 @@ namespace QParser
                     Send(ssl, 200, mime, File.ReadAllBytes(full), method == "HEAD");
                 }
             }
-            catch (Exception) { /* اتصال مقطوع — نتجاهله */ }
+            catch (Exception ex) { Log("connection error: " + ex.GetType().Name + ": " + ex.Message); }
         }
 
         static string ReadHeader(Stream s)
