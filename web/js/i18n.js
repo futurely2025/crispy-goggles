@@ -5,7 +5,7 @@
     ar: {
       appName: 'معادلات عربية', editorTitle: 'محرر المعادلات', loading: 'جارٍ التحميل…',
       zoomIn: 'تكبير', zoomOut: 'تصغير', fitWidth: 'ملاءمة العرض', expand: 'ملء الشاشة', toggleToolbar: 'إظهار/إخفاء شريط الرموز',
-      studios: 'أدوات متقدمة', stGraph: 'رسم الدوال', stGeometry: 'الأشكال الهندسية', stStructure: 'الصيغ البنائية', stSolve: 'حل خطوة بخطوة', stChart: 'الإحصاء والرسوم البيانية', stPhysics: 'الفيزياء والميكانيكا', stCircuit: 'الدوائر الكهربائية', stPdf: 'استوديو PDF — حلول على الكتب', stPdfTools: 'أدوات PDF — دمج، ضغط، تحويل…', stChem: 'الكيمياء: الذرة والمختبر', copyImage: 'نسخ كصورة', imageCopied: 'تم نسخ الصورة — الصقها في تطبيقك (Ctrl+V)', stDiagram: 'جدول التغيرات والمخططات',
+      studios: 'أدوات متقدمة', stGraph: 'رسم الدوال', stGeometry: 'الأشكال الهندسية', stStructure: 'الصيغ البنائية', stSolve: 'حل خطوة بخطوة', stChart: 'الإحصاء والرسوم البيانية', stPhysics: 'الفيزياء والميكانيكا', stCircuit: 'الدوائر الكهربائية', stPdf: 'استوديو PDF — حلول على الكتب', stPdfTools: 'أدوات PDF — دمج، ضغط، تحويل…', stQuestions: 'محلل الأسئلة — صح/خطأ واختيار من متعدد', stChem: 'الكيمياء: الذرة والمختبر', copyImage: 'نسخ كصورة', imageCopied: 'تم نسخ الصورة — الصقها في تطبيقك (Ctrl+V)', stDiagram: 'جدول التغيرات والمخططات',
       figGraph: 'رسم بياني', figGeometry: 'شكل هندسي', figStructure: 'صيغة بنائية', figInserted: 'تم إدراج الرسم', selectedFig: 'الرسم المحدد', figUpdated: 'تم تحديث الرسم',
       tagline: 'أسهل طريقة لكتابة المعادلات العربية والكيميائية في Word',
       math: 'رياضيات', chem: 'كيمياء',
@@ -47,7 +47,7 @@
     },
     en: {
       zoomIn: 'Zoom in', zoomOut: 'Zoom out', fitWidth: 'Fit width', expand: 'Full screen', toggleToolbar: 'Show/hide toolbar',
-      studios: 'Advanced tools', stGraph: 'Function graphs', stGeometry: 'Geometry figures', stStructure: 'Structural formulas', stSolve: 'Step-by-step solver', stChart: 'Statistics & charts', stPhysics: 'Physics & mechanics', stCircuit: 'Electric circuits', stPdf: 'PDF studio — solutions on books', stPdfTools: 'PDF tools — merge, compress, convert…', stChem: 'Chemistry: atoms & lab', copyImage: 'Copy as image', imageCopied: 'Image copied — paste it in your app (Ctrl+V)', stDiagram: 'Tables & diagrams',
+      studios: 'Advanced tools', stGraph: 'Function graphs', stGeometry: 'Geometry figures', stStructure: 'Structural formulas', stSolve: 'Step-by-step solver', stChart: 'Statistics & charts', stPhysics: 'Physics & mechanics', stCircuit: 'Electric circuits', stPdf: 'PDF studio — solutions on books', stPdfTools: 'PDF tools — merge, compress, convert…', stQuestions: 'Question parser — true/false & multiple choice', stChem: 'Chemistry: atoms & lab', copyImage: 'Copy as image', imageCopied: 'Image copied — paste it in your app (Ctrl+V)', stDiagram: 'Tables & diagrams',
       figGraph: 'Graph', figGeometry: 'Geometry', figStructure: 'Structure', figInserted: 'Figure inserted', selectedFig: 'Selected figure', figUpdated: 'Figure updated',
       appName: 'Arabic Math', editorTitle: 'Equation editor', loading: 'Loading…',
       tagline: 'The easiest way to write Arabic math and chemistry in Word',
