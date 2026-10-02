@@ -18,7 +18,7 @@
   function run() {
     if (!state.blocks) return;
     try {
-      state.res = Q.analyze(state.blocks, category());
+      state.res = Q.analyze(state.blocks, category(), { subject: $('subject').value });
     } catch (e) { say('تعذر التحليل: ' + (e.message || e), true); return; }
     var n = state.res.tf.length + state.res.mcq.length;
     if (!n && !state.res.errors.length) { say('لم يتم العثور على أسئلة (تأكد أن كل سؤال يبدأ بـ «س 1)»).', true); $('out').hidden = true; return; }
@@ -49,6 +49,7 @@
   $('fileBtn').onclick = function () { $('file').click(); };
   $('pasteBtn').onclick = function () { $('pasteBox').hidden = !$('pasteBox').hidden; };
   $('pasteGo').onclick = function () { load(Q.blocksFromText($('pasteTxt').value), ''); };
+  $('subject').addEventListener('change', function () { if (state.blocks) run(); });
   $('cat').addEventListener('input', function () { if (state.blocks) { clearTimeout(run.t); run.t = setTimeout(run, 250); } });
 
   // the open Word document: read straight from the Word API (flat OPC package -> document.xml)
@@ -110,7 +111,12 @@
       }).join('') + '</div><div class="q-ans">✅ الإجابة الصحيحة: ' + esc(r.correct_answer) + '</div>';
     }
     if (r.warn && r.warn.length) body += '<div class="q-info o"><small>⚠️ تنبيه</small>' + r.warn.map(esc).join('<br>') + '</div>';
+    if (r.trans) body += '<div class="q-info g"><small>🌐 ترجمة السؤال</small>' + esc(r.trans) + '</div>';
+    if (r.steps) body += '<div class="q-info b"><small>🎯 خطوات الحل</small>' + esc(r.steps) + '</div>';
+    if (r.idea) body += '<div class="q-info p"><small>💡 الفكرة الأساسية</small>' + esc(r.idea) + '</div>';
     if (r.shrah) body += '<div class="q-info b"><small>🎯 الشرح</small>' + esc(r.shrah) + '</div>';
+    if (r.rule) body += '<div class="q-info p"><small>📐 القاعدة</small>' + esc(r.rule) + '</div>';
+    if (r.examples) body += '<div class="q-info g"><small>✏️ أمثلة إضافية</small>' + esc(r.examples) + '</div>';
     if (r.explanation) body += '<div class="q-info y"><small>💡 التوضيح العلمي</small>' + esc(r.explanation) + '</div>';
     if (r.src) body += '<div class="q-src">📚 ' + esc(r.src) + '</div>';
     return '<details class="q-card' + (dup ? ' dup' : '') + '"><summary><span class="q-n' + (isTf ? '' : ' m') + '">' + r.num + '</span>' +
@@ -126,6 +132,7 @@
     return '<details class="q-card" open><summary><span class="q-n m">' + m.num + '–' + m.numTo + '</span><span class="q-t">' + esc(m.question) +
       '</span><span class="q-tags"><span class="q-tag">' + esc(m.difficulty) + '</span></span></summary><div class="q-body">' +
       '<table class="q-pairs"><thead><tr><th>المجموعة أ</th><th>المجموعة ب</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      (m.trans ? '<div class="q-info g"><small>🌐 ترجمة السؤال</small>' + esc(m.trans) + '</div>' : '') +
       (m.shrah ? '<div class="q-info b"><small>🎯 الشرح</small>' + esc(m.shrah) + '</div>' : '') +
       (m.explanation ? '<div class="q-info y"><small>💡 التوضيح العلمي</small>' + esc(m.explanation) + '</div>' : '') +
       '<div class="q-src">📚 ' + esc(m.src) + (m.time ? ' | ⏰ ' + esc(m.time) : '') + '</div></div></details>';
@@ -136,7 +143,7 @@
     var all = res.tf.concat(res.mcq), nW = all.filter(function (r) { return r.warn && r.warn.length; }).length, nR = res.dups.removed.length;
     var stem = 'questions';   // اسم ASCII ثابت: يضمن حفظ الملف بامتداد .csv في كل المتصفحات
     $('out').hidden = false;
-    $('stats').innerHTML = '<span class="q-chip">الكل ' + all.length + '</span><span class="q-chip">صح/خطأ ' + res.tf.length + '</span>' +
+    $('stats').innerHTML = '<span class="q-chip s">📘 ' + esc(res.profile.label) + '</span><span class="q-chip">الكل ' + all.length + '</span><span class="q-chip">صح/خطأ ' + res.tf.length + '</span>' +
       '<span class="q-chip">اختيار ' + res.mcq.length + '</span>' +
       (res.match.length ? '<span class="q-chip">وصل ' + res.match.length + ' كتلة</span>' : '') +
       (nW ? '<span class="q-chip w">⚠️ تحتاج مراجعة ' + nW + '</span>' : '') +
@@ -145,7 +152,18 @@
     var dl = $('dl'); dl.innerHTML = '';
     dl.appendChild(dlBtn('TF (' + res.tf.length + ')', 'tf', stem, csv));
     dl.appendChild(dlBtn('MCQ (' + res.mcq.length + ')', 'mcq', stem, csv));
-    if (res.match.length) dl.appendChild(dlBtn('وصل (' + res.match.length + ')', 'match', stem, csv));
+    if (res.match.length) {
+      dl.appendChild(dlBtn('وصل CSV (' + res.match.length + ')', 'match', stem, csv));
+      var xb = document.createElement('span');
+      xb.innerHTML = '<button class="qb s" type="button">⬇️ وصل Excel</button> ';
+      xb.firstChild.onclick = function () {
+        Q.makeXlsx(JSZip, csv.matchTable.cols, csv.matchTable.rows, 'أسئلة الوصل (المزاوجة)', 'blob').then(function (b) {
+          var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = stem + '_match.xlsx';
+          document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+        });
+      };
+      dl.appendChild(xb);
+    }
     dl.appendChild(dlBtn('الكل (' + all.length + ')', 'all', stem, csv));
     dl.appendChild(dlBtn('المُنقَّى (' + res.kept.length + ')', 'clean', stem, csv));
     var tabs = [['tf', '✅ صح/خطأ ' + res.tf.length], ['mcq', '🧩 اختيار ' + res.mcq.length]];
@@ -167,7 +185,7 @@
         }).join('') + '</div>';
       }).join('') : '<div class="q-ans">🎉 لا توجد أسئلة مكررة</div>';
     } else html = res.errors.map(function (e) {
-      return '<div class="q-err"><b>س' + e.num + '</b> ' + esc(e.q) + '<ul>' + e.missing.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
+      return '<div class="q-err"><b>س' + e.num + '</b> <span class="q-tag">' + esc(e.type || '') + '</span> ' + esc(e.q) + '<ul>' + e.missing.map(function (m) { return '<li>' + esc(m) + '</li>'; }).join('') + '</ul></div>';
     }).join('');
     $('panel').innerHTML = html;
   }

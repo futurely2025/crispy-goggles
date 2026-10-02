@@ -19,6 +19,13 @@
   <div class="q-box">
     <label for="cat">اسم الامتحان (يُستخرج من اسم الملف — عدّله إن لزم)</label>
     <input type="text" id="cat" placeholder="مثال: الدور الثاني 2017 - 2016">
+    <label for="subject" style="margin-top:8px">المادة (تلقائي: يتعرف عليها من الحقول)</label>
+    <select id="subject">
+      <option value="auto">🤖 تلقائي</option>
+      <option value="general">عام (تاريخ / دين / …)</option>
+      <option value="math">رياضيات (خطوات الحل + الفكرة الأساسية)</option>
+      <option value="english">إنجليزي (ترجمة + قاعدة + أمثلة)</option>
+    </select>
     <div class="q-row">
       <button class="qb" id="docBtn" type="button" hidden>📄 تحليل المستند المفتوح</button>
       <button class="qb s" id="fileBtn" type="button">📂 اختيار ملف Word (.docx)</button>

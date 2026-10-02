@@ -67,3 +67,7 @@ body.q-drop .q-wrap { outline: 3px dashed var(--tq); outline-offset: -6px; backg
 .q-pairs { width: 100%; border-collapse: collapse; margin: 6px 0; }
 .q-pairs th, .q-pairs td { border: 1px solid var(--line); padding: 6px 10px; text-align: right; font-size: 13px; }
 .q-pairs th { background: var(--tq-soft); color: var(--tq-3); }
+
+.q-box select { width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 9px; padding: 7px 10px; font: inherit; background: #fff; }
+.q-chip.s { background: var(--slate); color: #fff; }
+.q-info.g { background: #e3f6ea; } .q-info.p { background: #efe6fb; }

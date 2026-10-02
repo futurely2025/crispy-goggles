@@ -61,3 +61,35 @@ assert.strictEqual(flat.match[0].src, 'م');
 assert.strictEqual(flat.match[0].difficulty, 'سهل');
 assert.ok(Q.csvFiles(r, 'امتحان تجريبي').all.startsWith('\ufeffmark,question'));
 console.log('questions parser: all tests passed');
+
+// --- subjects: math / english (multi-line and flattened into one line) + xlsx
+(function () {
+  const fs = require('fs'), path = require('path');
+  const fx = n => fs.readFileSync(path.join(__dirname, 'fixtures', n + '.txt'), 'utf8');
+  [false, true].forEach(function (flat) {
+    const m = Q.analyze(Q.blocksFromText(flat ? fx('math').replace(/\r?\n/g, ' ') : fx('math')), 'x');
+    assert.strictEqual(m.profile.key, 'math');
+    assert.strictEqual(m.errors.length, 0);
+    assert.strictEqual(m.tf.length, 2); assert.strictEqual(m.mcq.length, 1);
+    assert.deepStrictEqual(m.mcq[0].options.slice(0, 4), ['120°', '135°', '150°', '160°']);
+    assert.ok(m.tf[0].steps && m.tf[0].idea);
+    assert.ok(Q.csvFiles(m, 'x').tf.split('\r\n')[0].endsWith('mark,type'));
+    const e = Q.analyze(Q.blocksFromText(flat ? fx('english').replace(/\r?\n/g, ' ') : fx('english')), 'x');
+    assert.strictEqual(e.profile.key, 'english');
+    assert.strictEqual(e.errors.length, 0);
+    assert.strictEqual(e.tf.length, 2); assert.strictEqual(e.mcq.length, 1); assert.strictEqual(e.match.length, 1);
+    assert.strictEqual(e.tf[1].correct_answer, 'صح');            // True -> صح
+    assert.strictEqual(e.tf[0].correct_answer, 'خطأ');           // False -> خطأ
+    assert.ok(e.tf[0].rule && e.tf[0].examples && e.tf[0].trans);
+    assert.strictEqual(e.match[0].pairs.length, 2);
+    assert.strictEqual(e.match[0].time, '40 ثانية');
+    assert.strictEqual(Q.csvFiles(e, 'x').tf.split('\r\n')[0].indexOf('mark,question,correct_answer,category'), 1);
+  });
+  const e = Q.analyze(Q.blocksFromText(fx('english')), 'x');
+  const JSZip = require('../web/qparser-assets/vendor/qparser-jszip.min.js');
+  const t = Q.csvFiles(e, 'x').matchTable;
+  Q.makeXlsx(JSZip, t.cols, t.rows, 'match', 'nodebuffer').then(function (buf) {
+    assert.ok(buf.length > 1000);
+    return JSZip.loadAsync(buf);
+  }).then(function (z) { assert.ok(z.file('xl/worksheets/sheet1.xml')); console.log('subjects + xlsx: ok'); });
+})();

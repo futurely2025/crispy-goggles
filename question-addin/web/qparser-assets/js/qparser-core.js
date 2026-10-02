@@ -176,24 +176,31 @@
   var Q_START = /^[•\-*\s]*س\s*(\d+)\s*[)\-.:：]?\s*([\s\S]*)$/;
   var SECTION = /^(?:أولا|أولاً|ثانيا|ثانياً|ثالثا|ثالثاً|رابعا|رابعاً|خامسا|خامساً)\s*[:：\-]/;
   var SEP = /^[\s_\-–—=*]{3,}$/;
-  var BULLET = /^[•·▪●◦*\-–]+\s*/;
+  var BULLET = /^(?:o\s+|[•·▪●◦*\-–]+\s*)/;
   var FIELDS = [
-    ['ans', /^(?:ال)?[إا]جابة(?:\s+الصحيحة)?\s*[:：]\s*/],
-    ['corr', /^تصحيح\s+الخطأ\s*[:：]\s*/],
-    ['shrah', /^(?:ال)?شرح\s*[:：]\s*/],
-    ['expl', /^(?:ال)?توضيح(?:\s+العلمي)?\s*[:：]\s*/],
-    ['src', /^(?:ال)?مصدر(?:\s+المجمع)?\s*[:：]\s*/],
-    ['time', /^الوقت[^:：]*[:：]\s*/],
-    ['diff', /^صعوبة[^:：]*[:：]\s*/]
+    ['ans',      /^(?:ال)?[إا]جابة(?:\s+الصحيحة)?\s*[:：]\s*/],
+    ['corr',     /^تصحيح\s+الخطأ\s*[:：]\s*/],
+    ['trans',    /^ترجمة\s+السؤال\s*[:：]\s*/],
+    ['steps',    /^خطوات\s+الحل\s*[:：]\s*/],
+    ['idea',     /^الفكرة\s+الأساسية\s*[:：]\s*/],
+    ['rule',     /^(?:ال)?قاعدة\s*[:：]\s*/],
+    ['examples', /^أمثلة\s+إضافية\s*[:：]\s*/],
+    ['shrah',    /^(?:ال)?شرح\s*[:：]\s*/],
+    ['expl',     /^(?:ال)?(?:توضيح(?:\s+العلمي)?|تحليل)\s*[:：]\s*/],
+    ['src',      /^(?:ال)?مصدر(?:\s+المجمع)?\s*[:：]\s*/],
+    ['time',     /^الوقت[^:：]*[:：]\s*/],
+    ['diff',     /^صعوبة[^:：]*[:：]\s*/]
   ];
   var MATCH_ITEM = /^[•\-*\s]*س\s*(\d+)\s*[)\-.:：]?\s*(.+?)\s*(?:->|=>|—>|–>|←|⟵)\s*(.+)$/;
   var DONE_LINE = /^(?:DONE|END|انتهى)$/i;
   function isMatchHead(line) {
-    return !/^[•\-*\s]*س\s*\d+\s*[)]/.test(line) &&
-      (/(?:المزاوجة|التوصيل|المطابقة|الوصل)/.test(line) || /س\s*\d+\s*[-–]\s*س?\s*\d+/.test(line));
+    if (line.length > 80) return false;
+    if (/^[•\-*\s]*س\s*\d+\s*\)/.test(line)) return false;
+    return /^(?:[•\-*]\s*)?(?:جدول\s+)?(?:أسئلة\s+)?(?:ال)?(?:وصل|مزاوجة|توصيل|مطابقة)/.test(line) ||
+      /^(?:[•\-*]\s*)?[^:：]{0,40}س\s*\d+\s*[-–]\s*س?\s*\d+\s*\)?\s*[:：]?\s*$/.test(line);
   }
   var OPT_LINE = /^\(?\s*(أ|ب|ج|د|هـ|ه)\s*[)\-.ـ]+\s*([\s\S]*)$/;
-  var TF_ANS = /^\(?\s*(صح|صحيحة|صحيح|خطأ|خطا|خاطئة|خاطئ)\s*\)?\s*\.?$/;
+  var TF_ANS = /^\(?\s*(صح|صحيحة|صحيح|خطأ|خطا|خاطئة|خاطئ|true|false)\s*\)?\s*\.?$/i;
 
   function fieldOf(line, retry) {
     for (var i = 0; i < FIELDS.length; i++) {
@@ -218,17 +225,25 @@
   }
 
   // a pasted block may be flattened into one line: split it back at the question / field markers
-  var LABEL_ANY = /(?:^|\s)(?:الإجابة|تصحيح\s+الخطأ|الشرح|التوضيح|المصدر(?:\s+المجمع)?|الوقت\s+المثالي[^:：]*|صعوبة\s+السؤال)\s*[:：]/g;
+  var LABELS_SRC = 'الإجابة|تصحيح\\s+الخطأ|ترجمة\\s+السؤال|خطوات\\s+الحل|الفكرة\\s+الأساسية|الشرح|التوضيح(?:\\s+العلمي)?|التحليل|المصدر(?:\\s+المجمع)?|الوقت\\s+المثالي[^:：]*|صعوبة\\s+السؤال';
+  var LABEL_ANY = new RegExp('(?:^|\\s)(?:' + LABELS_SRC + ')\\s*[:：]', 'g');
+  var LABEL_SPLIT = new RegExp('\\s+(?=(?:' + LABELS_SRC + ')\\s*[:：])', 'g');
   function explode(line) {
     var parts = [line];
-    if ((line.match(/(?:^|\s)س\s*\d+\s*\)/g) || []).length >= 2 && MATCH_ARROW.test(line)) {
+    var nAns = (line.match(/الإجابة\s*[:：]/g) || []).length;
+    if (nAns >= 2) {                                      // a whole pasted document flattened into one line
+      parts = [];
+      line.split(/\s*[-_=]{5,}\s*/).forEach(function (seg) {
+        seg.split(/\s+(?=س\s*\d+\s*\))/).forEach(function (x) { if (x.trim()) parts.push(x); });
+      });
+    } else if ((line.match(/(?:^|\s)س\s*\d+\s*\)/g) || []).length >= 2 && MATCH_ARROW.test(line)) {
       parts = line.split(/\s+(?=س\s*\d+\s*\))/);
     }
     var out = [];
     parts.forEach(function (ln) {
-      if ((ln.match(LABEL_ANY) || []).length >= 2) {
-        ln = ln.replace(/\s+(?=(?:الإجابة|تصحيح\s+الخطأ|الشرح|التوضيح|المصدر(?:\s+المجمع)?|الوقت\s+المثالي[^:：]*|صعوبة\s+السؤال)\s*[:：])/g, '\n');
-      }
+      var nl = (ln.match(LABEL_ANY) || []).length;
+      var startsQ = /^\s*[•\-*]?\s*س\s*\d+\s*\)/.test(ln);
+      if (nl >= 2 || (nl >= 1 && startsQ)) ln = ln.replace(LABEL_SPLIT, '\n');
       ln.split('\n').forEach(function (x) {
         if (/\s+o\s{2,}\S/.test(x)) x.split(/\s+o\s{2,}(?=\S)/).forEach(function (y) { out.push(y); });
         else out.push(x);
@@ -298,7 +313,7 @@
       type: 'match', num: nums[0], numTo: nums[nums.length - 1],
       question: 'أسئلة الوصل (المزاوجة)',
       pairs: g.items.map(function (i) { return { num: i.num, key: i.key, value: i.value }; }),
-      shrah: cleanWs(g.shrTxt.join(' ')), explanation: cleanWs(f.expl || ''), src: cleanWs(f.src || ''),
+      shrah: cleanWs(g.shrTxt.join(' ')), trans: cleanWs(f.trans || ''), explanation: cleanWs(f.expl || ''), src: cleanWs(f.src || ''),
       time: ti, difficulty: /سهل/.test(di) ? 'سهل' : (/صعب/.test(di) ? 'صعب' : 'متوسط'), category: category, warn: []
     };
   }
@@ -338,7 +353,8 @@
     var q = { num: g.num, ans: ans, f: f, options: [], warn: warn };
     if (TF_ANS.test(ans)) {
       q.kind = 'tf'; q.stem = cleanWs(body.join(' '));
-      q.ans = norm(ans).indexOf('صح') === 0 ? 'صح' : 'خطأ';
+      var na = norm(ans);
+      q.ans = (na.indexOf('صح') === 0 || na === 'true') ? 'صح' : 'خطأ';
       return q;
     }
     q.kind = 'mcq';
@@ -402,41 +418,68 @@
   }
 
   // ───────────────────────────────────────────── questions → report records
-  function buildResults(qs, category) {
+  // ───────────────────────────────────────────── subject profiles
+  var FIELD_AR = { shrah: 'الشرح', steps: 'خطوات الحل', idea: 'الفكرة الأساسية', expl: 'التوضيح العلمي', src: 'المصدر', time: 'الوقت المثالي', diff: 'صعوبة السؤال' };
+  var PROFILES = {
+    general: { key: 'general', label: 'عام (تاريخ / دين / …)', tfReq: ['shrah', 'expl', 'src', 'time', 'diff'], strictMcq: false },
+    math:    { key: 'math', label: 'رياضيات', tfReq: ['steps', 'idea', 'expl', 'src', 'time', 'diff'], strictMcq: false },
+    english: { key: 'english', label: 'إنجليزي', tfReq: ['shrah', 'expl', 'src', 'time', 'diff'], strictMcq: true }
+  };
+  function detectProfile(fieldSets) {
+    var has = {};
+    fieldSets.forEach(function (f) { Object.keys(f || {}).forEach(function (k) { if (f[k]) has[k] = 1; }); });
+    if (has.steps || has.idea) return 'math';
+    if (has.trans || has.rule || has.examples) return 'english';
+    return 'general';
+  }
+  function diffOf(d, strictFirst) {
+    d = trimDot(d || '');
+    var m = /(سهل|متوسط|صعب)/.exec(d);
+    return m ? m[1] : (d ? d.split(/\s+/)[0] : 'غير محدد');
+  }
+  function extra(f) {
+    return { steps: cleanWs(f.steps || ''), idea: cleanWs(f.idea || ''), trans: cleanWs(f.trans || ''),
+      rule: cleanWs(f.rule || ''), examples: cleanWs(f.examples || '') };
+  }
+
+  function buildResults(qs, category, prof) {
     var tf = [], mcq = [], errors = [];
     qs.forEach(function (q) {
-      var f = q.f;
+      var f = q.f, missing = [];
+      var short = q.stem.length > 80 ? q.stem.slice(0, 80) + '...' : q.stem;
       if (q.kind === 'tf') {
-        var missing = [];
         if (!q.stem) missing.push('نص السؤال');
         if (!q.ans) missing.push('الإجابة');
-        if (!f.shrah) missing.push('الشرح');
-        if (!f.expl) missing.push('التوضيح العلمي');
-        if (!f.src) missing.push('المصدر');
-        if (!f.time) missing.push('الوقت المثالي');
-        if (!f.diff) missing.push('صعوبة السؤال');
+        prof.tfReq.forEach(function (k) { if (!f[k]) missing.push(FIELD_AR[k]); });
         if (q.ans === 'خطأ' && !f.corr) missing.push('تصحيح الخطأ (مطلوب لأن الإجابة خطأ)');
-        if (missing.length) {
-          errors.push({ num: q.num, q: q.stem.length > 80 ? q.stem.slice(0, 80) + '...' : q.stem, missing: missing });
-          return;
-        }
-        var dm = /(سهل|متوسط|صعب)/.exec(f.diff);
-        tf.push({
-          type: 'tf', num: q.num, question: q.stem, correct_answer: q.ans, shrah: cleanWs(f.shrah), src: cleanWs(f.src),
+        if (missing.length) { errors.push({ num: q.num, type: 'صح / خطأ', q: short, missing: missing }); return; }
+        var rec = {
+          type: 'tf', num: q.num, question: q.stem, correct_answer: q.ans, shrah: cleanWs(f.shrah || ''), src: cleanWs(f.src),
           time: trimDot(f.time), corr: q.ans === 'خطأ' ? cleanWs(f.corr) : '', explanation: cleanWs(f.expl),
-          difficulty: dm ? dm[1] : trimDot(f.diff), category: category, warn: q.warn
-        });
+          difficulty: diffOf(f.diff), category: category, warn: q.warn
+        };
+        var x = extra(f); Object.keys(x).forEach(function (k) { rec[k] = x[k]; });
+        tf.push(rec);
       } else {
-        mcq.push({
-          type: 'mcq', num: q.num, question: q.stem, correct_answer: q.ans,
-          options: [0, 1, 2, 3, 4].map(function (i) {
-            var at = q.letters ? q.letters.indexOf(LETTERS[i]) : i;
-            return at >= 0 && q.options[at] ? trimDot(q.options[at]) : '';
-          }),
-          shrah: cleanWs(f.shrah || ''), src: cleanWs(f.src || ''), time: trimDot(f.time || ''),
-          explanation: cleanWs(f.expl || ''), difficulty: f.diff ? trimDot(f.diff).split(/\s+/)[0] : 'غير محدد',
-          category: category, warn: q.warn, conf: q.conf
+        var opts = [0, 1, 2, 3, 4].map(function (i) {
+          var at = q.letters ? q.letters.indexOf(LETTERS[i]) : i;
+          return at >= 0 && q.options[at] ? trimDot(q.options[at]) : '';
         });
+        if (prof.strictMcq && !q.table) {
+          if (!q.stem) missing.push('نص السؤال');
+          if (opts.filter(Boolean).length < 2) missing.push('يجب أن يحتوي السؤال على خيارين على الأقل');
+          if (!q.ans) missing.push('الإجابة الصحيحة');
+          ['shrah', 'expl', 'src', 'time', 'diff'].forEach(function (k) { if (!f[k]) missing.push(FIELD_AR[k]); });
+          if (missing.length) { errors.push({ num: q.num, type: 'اختيار متعدد', q: short, missing: missing }); return; }
+        }
+        var m = {
+          type: 'mcq', num: q.num, question: q.stem, correct_answer: q.ans, options: opts,
+          shrah: cleanWs(f.shrah || ''), src: cleanWs(f.src || ''), time: trimDot(f.time || ''),
+          explanation: cleanWs(f.expl || ''), difficulty: f.diff ? diffOf(f.diff) : 'غير محدد',
+          category: category, warn: q.warn, conf: q.conf
+        };
+        var y = extra(f); Object.keys(y).forEach(function (k) { m[k] = y[k]; });
+        mcq.push(m);
       }
     });
     return { tf: tf, mcq: mcq, errors: errors };
@@ -460,15 +503,22 @@
   }
 
   // blocks → full analysis
-  function analyze(blocks, category) {
-    var items = collectGroups(blocks), qs = [], matches = [];
+  // opts.subject: 'auto' | 'general' | 'math' | 'english'
+  function analyze(blocks, category, opts) {
+    opts = opts || {};
+    var items = collectGroups(blocks), qs = [], groups = [];
     items.forEach(function (it) {
       if (it.k === 'q') qs.push(convertGroup(it.g));
-      else if (it.k === 'm') { if (it.g.items.length) matches.push(convertMatch(it.g, category || 'امتحان غير محدد')); }
-      else convertTable(it.rows).forEach(function (q) { qs.push(q); });
+      else if (it.k === 'm') { if (it.g.items.length) groups.push(it.g); }
+      else convertTable(it.rows).forEach(function (q) { q.table = true; qs.push(q); });
     });
-    var res = buildResults(qs, category || 'امتحان غير محدد');
-    res.match = matches;
+    var key = opts.subject && opts.subject !== 'auto' ? opts.subject
+      : detectProfile(qs.map(function (q) { return q.f; }).concat(groups.map(function (g) { return g.f; })));
+    var prof = PROFILES[key] || PROFILES.general;
+    var cat = category || 'امتحان غير محدد';
+    var res = buildResults(qs, cat, prof);
+    res.match = groups.map(function (g) { return convertMatch(g, cat); });
+    res.profile = prof;
     res.tf.concat(res.mcq).forEach(function (r, i) { r.idx = i; });
     var texts = res.tf.map(function (r) { return r.question; })
       .concat(res.mcq.map(function (r) { return r.question + ' ' + r.correct_answer; }));
@@ -482,49 +532,103 @@
   function toCsv(cols, rows) {
     return '﻿' + [cols.join(',')].concat(rows.map(function (r) { return cols.map(function (c) { return csvCell(r[c]); }).join(','); })).join('\r\n') + '\r\n';
   }
-  function tfRow(r) {
-    return { mark: 1, question: r.question, correct_answer: r.correct_answer, description: '● الشرح 🎯: ' + r.shrah + '\n   ',
-      correction: r.corr, explanation: r.explanation, perfect_time: '⏰ ' + r.time, lesson: 'المصدر 🔍📚: ' + r.src,
-      category: r.category, difficulty: r.difficulty };
+  function descOf(r, key, tf) {
+    if (key === 'math') return '● خطوات الحل 🎯: ' + (r.steps || '') + '\n● الفكرة الأساسية 💡: ' + (r.idea || '') + '\n   ';
+    if (key === 'english') {
+      var p = [];
+      if (r.trans) p.push(' ترجمة السؤال 🌐: ' + r.trans);
+      p.push(' الشرح 🎯: ' + (r.shrah || ''));
+      if (r.rule) p.push('     ●️ القاعدة 📐: ' + r.rule);
+      if (r.examples) p.push('     ● أمثلة إضافية ✏️: ' + r.examples);
+      p.push(' المصدر 🔍📚: ' + (r.src || ''));
+      return p.join('\n');
+    }
+    return '● الشرح 🎯: ' + (r.shrah || '') + (tf ? '\n   ' : '\n     ');
   }
-  function mcqRow(r) {
-    return { question: r.question, correct_answer: r.correct_answer, option_1: r.options[0], option_2: r.options[1],
-      option_3: r.options[2], option_4: r.options[3], option_5: r.options[4], description: '● الشرح 🎯: ' + r.shrah + '\n     ',
-      correction: '', explanation: r.explanation, perfect_time: '⏰ ' + r.time, lesson: 'المصدر 🔍📚: ' + r.src,
-      category: r.category, difficulty: r.difficulty };
+  function row(r, key, tf) {
+    var o = {
+      mark: 1, question: r.question, correct_answer: r.correct_answer, description: descOf(r, key, tf),
+      correction: tf ? r.corr : '', explanation: r.explanation, perfect_time: '⏰ ' + r.time,
+      lesson: 'المصدر 🔍📚' + (key === 'english' ? ' : ' : ': ') + (r.src || ''), category: r.category, difficulty: r.difficulty,
+      type: tf ? 'tf' : 'mcq'
+    };
+    if (!tf) for (var i = 0; i < 5; i++) o['option_' + (i + 1)] = r.options[i];
+    return o;
   }
-  var TF_COLS = ['mark', 'question', 'correct_answer', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty'];
-  var MCQ_COLS = ['question', 'correct_answer', 'option_1', 'option_2', 'option_3', 'option_4', 'option_5', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty'];
-  var ALL_COLS = TF_COLS.concat(['option_1', 'option_2', 'option_3', 'option_4', 'option_5']);
+  var OPT4 = ['option_1', 'option_2', 'option_3', 'option_4'], OPT5 = OPT4.concat(['option_5']);
+  var COLS = {
+    general: {
+      tf: ['mark', 'question', 'correct_answer', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty'],
+      mcq: ['question', 'correct_answer'].concat(OPT5, ['description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty'])
+    },
+    math: {
+      tf: ['question', 'correct_answer', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty', 'mark', 'type'],
+      mcq: ['question', 'correct_answer', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty', 'mark'].concat(OPT4, ['type'])
+    },
+    english: {
+      tf: ['mark', 'question', 'correct_answer', 'category', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'difficulty'],
+      mcq: ['mark', 'question', 'correct_answer'].concat(OPT4, ['category', 'description', 'correction', 'explanation', 'perfect_time', 'lesson', 'difficulty'])
+    }
+  };
+  function allCols(c, key) { return c.tf.concat(c.mcq.filter(function (x) { return c.tf.indexOf(x) < 0; })); }
 
-  function matchCsv(matches, category) {
-    var n = 5;
-    matches.forEach(function (m) { if (m.pairs.length > n) n = m.pairs.length; });
-    var cols = ['mark', 'question'];
-    for (var i = 1; i <= n; i++) cols.push('pairs_key_' + i, 'pairs_value_' + i);
-    cols = cols.concat(['description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty']);
-    var rows = matches.map(function (m) {
-      var r = { mark: 1, question: m.question };
-      for (var i = 1; i <= n; i++) { var p = m.pairs[i - 1]; r['pairs_key_' + i] = p ? p.key : ''; r['pairs_value_' + i] = p ? p.value : ''; }
-      r.description = '● الشرح 🎯: ' + m.shrah + '\n   '; r.correction = ''; r.explanation = m.explanation;
-      r.perfect_time = m.time ? '⏰ ' + m.time : ''; r.lesson = m.src ? 'المصدر 🔍📚: ' + m.src : '';
-      r.category = category; r.difficulty = m.difficulty;
-      return r;
+  // matching blocks → rows of at most 5 pairs (one row per 5 pairs, shared explanation)
+  function matchRows(matches, category, key) {
+    var rows = [];
+    matches.forEach(function (m) {
+      for (var s0 = 0; s0 < Math.max(m.pairs.length, 1); s0 += 5) {
+        var chunk = m.pairs.slice(s0, s0 + 5), r = { mark: 1, question: m.question };
+        for (var i = 0; i < 5; i++) { r['pairs_key_' + (i + 1)] = chunk[i] ? chunk[i].key : ''; r['pairs_value_' + (i + 1)] = chunk[i] ? chunk[i].value : ''; }
+        r.description = key === 'english' ? descOf({ trans: m.trans, shrah: m.shrah, src: '' }, 'english').replace(/\n? المصدر 🔍📚: $/, '')
+                                          : '● الشرح 🎯: ' + m.shrah + '\n   ';
+        r.correction = ''; r.explanation = m.explanation;
+        r.perfect_time = (key === 'english' || m.time) ? '⏰ ' + m.time : '';
+        r.lesson = key === 'english' ? 'المصدر 🔍📚 : ' + m.src : (m.src ? 'المصدر 🔍📚: ' + m.src : '');
+        r.category = category; r.difficulty = m.difficulty;
+        rows.push(r);
+      }
     });
-    return toCsv(cols, rows);
+    var cols = (key === 'english' ? [] : ['mark']).concat(['question']);
+    for (var i = 1; i <= 5; i++) cols.push('pairs_key_' + i, 'pairs_value_' + i);
+    cols = cols.concat(['description', 'correction', 'explanation', 'perfect_time', 'lesson', 'category', 'difficulty']);
+    return { cols: cols, rows: rows };
   }
 
   function csvFiles(res, category) {
+    var key = res.profile ? res.profile.key : 'general', c = COLS[key];
     function setCat(r) { r.category = category; return r; }
-    var tf = res.tf.map(function (r) { return tfRow(setCat(r)); });
-    var mcq = res.mcq.map(function (r) { return mcqRow(setCat(r)); });
+    var tf = res.tf.map(function (r) { return row(setCat(r), key, true); });
+    var mcq = res.mcq.map(function (r) { return row(setCat(r), key, false); });
     var nTf = res.tf.length, keptTf = [], keptMcq = [];
     res.kept.forEach(function (i) { if (i < nTf) keptTf.push(tf[i]); else keptMcq.push(mcq[i - nTf]); });
+    var ac = allCols(c);
+    var mr = matchRows(res.match || [], category, key);
     return {
-      tf: toCsv(TF_COLS, tf), mcq: toCsv(MCQ_COLS, mcq),
-      all: toCsv(ALL_COLS, tf.concat(mcq)), clean: toCsv(ALL_COLS, keptTf.concat(keptMcq)),
-      match: matchCsv(res.match || [], category)
+      tf: toCsv(c.tf, tf), mcq: toCsv(c.mcq, mcq),
+      all: toCsv(ac, tf.concat(mcq)), clean: toCsv(ac, keptTf.concat(keptMcq)),
+      match: toCsv(mr.cols, mr.rows), matchTable: mr
     };
+  }
+
+  // minimal .xlsx writer (JSZip is passed in) — used for the matching sheet
+  function colLetter(i) { var s = ''; for (i++; i > 0; i = Math.floor((i - 1) / 26)) s = String.fromCharCode(65 + (i - 1) % 26) + s; return s; }
+  function xesc(v) { return String(v == null ? '' : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function makeXlsx(JSZipCtor, cols, rows, sheetName, type) {
+    var z = new JSZipCtor();
+    z.file('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>');
+    z.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+    z.file('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="' + xesc(sheetName).slice(0, 31) + '" sheetId="1" r:id="rId1"/></sheets></workbook>');
+    z.file('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>');
+    var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView rightToLeft="1" workbookViewId="0"/></sheetViews><sheetData>';
+    function cell(ci, ri, v) {
+      var ref = colLetter(ci) + ri;
+      if (typeof v === 'number') return '<c r="' + ref + '"><v>' + v + '</v></c>';
+      return '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + xesc(v) + '</t></is></c>';
+    }
+    xml += '<row r="1">' + cols.map(function (c, i) { return cell(i, 1, c); }).join('') + '</row>';
+    rows.forEach(function (r, ri) { xml += '<row r="' + (ri + 2) + '">' + cols.map(function (c, i) { return cell(i, ri + 2, r[c]); }).join('') + '</row>'; });
+    z.file('xl/worksheets/sheet1.xml', xml + '</sheetData></worksheet>');
+    return z.generateAsync({ type: type || 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   }
 
   // ───────────────────────────────────────────── OOXML / document.xml → blocks
@@ -599,7 +703,7 @@
   }
 
   var api = {
-    analyze: analyze, splitInlineOptions: splitInlineOptions, csvFiles: csvFiles, similarity: similarity,
+    analyze: analyze, splitInlineOptions: splitInlineOptions, csvFiles: csvFiles, similarity: similarity, makeXlsx: makeXlsx, PROFILES: PROFILES,
     blocksFromXml: blocksFromXml, blocksFromText: blocksFromText, examNameFromFilename: examNameFromFilename,
     categoryFromName: categoryFromName, LETTERS: LETTERS
   };
