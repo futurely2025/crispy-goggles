@@ -390,21 +390,6 @@
     window.open(u, '_blank');
   };
 
-  // question parser: runs in the pane; the page asks for the open document and we read it with the Word API
-  $('questionsTile').onclick = function () { openInPane('questions', {}); };
-  window.addEventListener('message', function (e) {
-    if (e.origin !== location.origin || !e.data || e.data.qask !== 'doc') return;
-    var src = e.source;
-    function reply(d) { try { src.postMessage({ qdoc: d }, location.origin); } catch (x) { /* frame closed */ } }
-    if (!inWord || !window.Word) { reply({ error: 'هذه الميزة تعمل داخل Word فقط — استخدم «اختيار ملف Word» في المتصفح.' }); return; }
-    var name = '';
-    try { name = Office.context.document.url || ''; } catch (x) { /* unsaved doc */ }
-    Word.run(function (ctx) {
-      var o = ctx.document.body.getOoxml();
-      return ctx.sync().then(function () { return o.value; });
-    }).then(function (xml) { reply({ xml: xml, name: name }); }, function (err) { reply({ error: errMsg(err) }); });
-  });
-
   // ------------------------------------------------------------ boot
   applyLang();
   syncSettings();

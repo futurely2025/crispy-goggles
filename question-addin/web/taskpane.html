@@ -4,23 +4,21 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" href="icons/icon-32.png">
-  <title>محلل الأسئلة — معادلات عربية</title>
-  <link rel="stylesheet" href="css/fonts.css?v=5.7.0">
-  <link rel="stylesheet" href="css/brand.css?v=5.0.0">
-  <link rel="stylesheet" href="css/questions.css?v=1.0.0">
+  <title>محلل الأسئلة</title>
+  <link rel="stylesheet" href="css/app.css?v=1.0.0">
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 </head>
 <body class="q-page">
 <div class="q-wrap">
   <div class="q-top">
     <h1>محلل <span>الأسئلة</span></h1>
-    <button class="qb o" id="backBtn" type="button" hidden>← رجوع</button>
   </div>
 
   <div class="q-box">
     <label for="cat">اسم الامتحان (يُستخرج من اسم الملف — عدّله إن لزم)</label>
     <input type="text" id="cat" placeholder="مثال: الدور الثاني 2017 - 2016">
     <div class="q-row">
-      <button class="qb" id="docBtn" type="button" hidden>📄 تحليل المستند المفتوح في Word</button>
+      <button class="qb" id="docBtn" type="button" hidden>📄 تحليل المستند المفتوح</button>
       <button class="qb s" id="fileBtn" type="button">📂 اختيار ملف Word (.docx)</button>
       <button class="qb o" id="pasteBtn" type="button">📋 لصق نص</button>
       <input type="file" id="file" accept=".docx" hidden>
@@ -34,15 +32,13 @@
 
   <div id="out" hidden>
     <div class="q-stats" id="stats"></div>
-    <div class="q-box">
-      <div class="q-dl" id="dl"></div>
-    </div>
+    <div class="q-box"><div class="q-dl" id="dl"></div></div>
     <div class="q-tabs" id="tabs"></div>
     <div id="panel"></div>
   </div>
 </div>
-<script src="vendor/jszip/jszip.min.js"></script>
-<script src="js/questions/parser.js?v=1.0.0"></script>
-<script src="js/questions/ui.js?v=1.0.0"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="js/parser.js?v=1.0.0"></script>
+<script src="js/app.js?v=1.0.0"></script>
 </body>
 </html>

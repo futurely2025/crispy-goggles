@@ -1,10 +1,9 @@
-/* questions.html — UI. Sources: the open Word document (via the task pane), a .docx file, or pasted text. */
+/* محلل الأسئلة — الواجهة. المصادر: المستند المفتوح في Word، أو ملف .docx، أو نص ملصوق. */
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var Q = window.QParser;
-  var inFrame = window.parent !== window;
-  var state = { blocks: null, res: null, tab: 'tf' };
+    var state = { blocks: null, res: null, tab: 'tf' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function say(t, err) { $('msg').textContent = t || ''; $('msg').className = 'q-msg' + (err ? ' err' : ''); }
@@ -44,19 +43,24 @@
   $('pasteGo').onclick = function () { load(Q.blocksFromText($('pasteTxt').value), ''); };
   $('cat').addEventListener('input', function () { if (state.blocks) { clearTimeout(run.t); run.t = setTimeout(run, 250); } });
 
-  // the open document is read by the task pane (it owns the Word API) and posted here
-  if (inFrame) {
-    $('backBtn').hidden = false;
-    $('docBtn').hidden = false;
-    $('backBtn').onclick = function () { parent.postMessage({ armath: { type: 'close' } }, location.origin); };
-    $('docBtn').onclick = function () { say('جارٍ قراءة المستند…'); parent.postMessage({ qask: 'doc' }, location.origin); };
-    window.addEventListener('message', function (e) {
-      if (e.origin !== location.origin || !e.data || !e.data.qdoc) return;
-      var d = e.data.qdoc;
-      if (d.error) { say('تعذرت قراءة المستند: ' + d.error, true); return; }
-      fromXml(d.xml, Q.examNameFromFilename(d.name || ''));
+  // the open Word document: read straight from the Word API (flat OPC package -> document.xml)
+  var inWord = false;
+  function readDocument() {
+    if (!inWord) { say('القراءة المباشرة تعمل داخل Word فقط — اختر ملف Word من الزر بالأعلى.', true); return; }
+    say('جارٍ قراءة المستند…');
+    var name = '';
+    try { name = Office.context.document.url || ''; } catch (e) { /* unsaved document */ }
+    Word.run(function (ctx) {
+      var o = ctx.document.body.getOoxml();
+      return ctx.sync().then(function () { return o.value; });
+    }).then(function (xml) { fromXml(xml, Q.examNameFromFilename(name)); },
+      function (err) { say('تعذرت قراءة المستند: ' + ((err && err.message) || err), true); });
+  }
+  $('docBtn').onclick = function () { readDocument(); };
+  if (window.Office && Office.onReady) {
+    Office.onReady(function (info) {
+      if (info && info.host === Office.HostType.Word) { inWord = true; $('docBtn').hidden = false; readDocument(); }
     });
-    parent.postMessage({ qask: 'doc' }, location.origin);        // analyse the open document on load
   }
 
   // ----------------------------------------------------------- output
