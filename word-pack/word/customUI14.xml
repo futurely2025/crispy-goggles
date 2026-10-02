@@ -1,0 +1,12 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="qpTab" label="{{TAB}}">
+        <group id="qpGroup" label="{{GROUP}}">
+          <button id="qpBtn" label="{{BUTTON}}" size="large" imageMso="ReviewAcceptChange"
+                  screentip="{{BUTTON}}" supertip="{{TIP}}" onAction="QuestionParser_Click"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
