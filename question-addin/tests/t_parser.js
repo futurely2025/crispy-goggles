@@ -29,5 +29,27 @@ assert.deepStrictEqual(
   ['الاعتراف بالسيد إدريس أميراً على برقة', 'استقلال الأجزاء الجنوبية من برقة', 'تحديد إجدابيا عاصمة للإمارة']);
 assert.strictEqual(Q.examNameFromFilename('C:\\Users\\a\\الدور الثاني 2017 - 2016.docx'), 'الدور الثاني 2017 - 2016');
 assert.strictEqual(Q.categoryFromName('الدور الأول 2013'), 'امتحان الدور الأول 2013');
+
+// --- matching group ("جدول المزاوجة") + stray letter before a field name + DONE marker
+const m = Q.analyze([
+  p('س1) سؤال عادي.'), p('الإجابة: صح'), p('الشرح: x'), p('التوضيح: y'), p('المصدر: z'),
+  p('الوقت المثالي لحل السؤال: 30 ثانية'), p('ص صعوبة السؤال: سهل'),
+  p('--------------------------------------------------------------------------------'),
+  p('جدول المزاوجة والتوصيل (س 51 - س52):'),
+  p('س51) مجلة الفنون أول مجلة ليبية -> أصدرها محمد داوود عام 1898م.'),
+  p('س52) مشروع بيفن -> بموجبه تم تقسيم ليبيا.'),
+  p('الشرح:'),
+  p('أصدرها محمد داوود عام 1898م:'), p('شرح الأولى.'),
+  p('بموجبه تم تقسيم ليبيا:'), p('شرح الثانية.'),
+  p('التوضيح: عام'), p('المصدر: م'), p('الوقت المثالي لحل السؤال: 90 ثانية'), p('صعوبة السؤال: متوسط'),
+  p('DONE')
+], 'x');
+assert.strictEqual(m.errors.length, 0);
+assert.strictEqual(m.tf[0].difficulty, 'سهل');
+assert.strictEqual(m.mcq.length, 2);
+assert.deepStrictEqual(m.mcq[0].options.slice(0, 2), ['أصدرها محمد داوود عام 1898م', 'بموجبه تم تقسيم ليبيا']);
+assert.strictEqual(m.mcq[1].correct_answer, 'بموجبه تم تقسيم ليبيا');
+assert.strictEqual(m.mcq[1].shrah, 'شرح الثانية.');
+assert.strictEqual(m.mcq[0].time, '90 ثانية');
 assert.ok(Q.csvFiles(r, 'امتحان تجريبي').all.startsWith('\ufeffmark,question'));
 console.log('questions parser: all tests passed');

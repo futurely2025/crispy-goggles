@@ -186,13 +186,24 @@
     ['time', /^الوقت[^:：]*[:：]\s*/],
     ['diff', /^صعوبة[^:：]*[:：]\s*/]
   ];
+  var MATCH_ITEM = /^[•\-*\s]*س\s*(\d+)\s*[)\-.:：]?\s*(.+?)\s*(?:->|=>|—>|–>|←|⟵)\s*(.+)$/;
+  var DONE_LINE = /^(?:DONE|END|انتهى)$/i;
+  function isMatchHead(line) {
+    return !/^[•\-*\s]*س\s*\d+\s*[)]/.test(line) &&
+      (/(?:المزاوجة|التوصيل|المطابقة)/.test(line) || /س\s*\d+\s*[-–]\s*س?\s*\d+/.test(line));
+  }
   var OPT_LINE = /^\(?\s*(أ|ب|ج|د|هـ|ه)\s*[)\-.ـ]+\s*([\s\S]*)$/;
   var TF_ANS = /^\(?\s*(صح|صحيحة|صحيح|خطأ|خطا|خاطئة|خاطئ)\s*\)?\s*\.?$/;
 
-  function fieldOf(line) {
+  function fieldOf(line, retry) {
     for (var i = 0; i < FIELDS.length; i++) {
       var m = FIELDS[i][1].exec(line);
       if (m) return [FIELDS[i][0], line.slice(m[0].length).trim()];
+    }
+    // a stray single letter before the field name (e.g. "ص صعوبة السؤال: متوسط") is a typo — tolerate it
+    if (!retry && /^[\u0621-\u064A]\s+\S/.test(line)) {
+      var r = fieldOf(line.replace(/^[\u0621-\u064A]\s+/, ''), true);
+      if (r[0]) return r;
     }
     return [null, line];
   }
@@ -208,15 +219,37 @@
 
   function collectGroups(blocks) {
     var items = [], cur = null;
-    function flush() { if (cur) { items.push({ k: 'q', g: cur }); cur = null; } }
+    function flush() { if (cur) { items.push({ k: cur.match ? 'm' : 'q', g: cur }); cur = null; } }
+
+    // matching table: "س51) stem -> answer" lines, then one shared "الشرح:" with a block per answer
+    function matchLine(line) {
+      var m = MATCH_ITEM.exec(line);
+      if (m) { cur.items.push({ num: parseInt(m[1], 10), stem: cleanWs(m[2]), ans: trimDot(m[3]) }); cur.mode = 'f'; cur.last = null; return true; }
+      var fr = fieldOf(line.replace(BULLET, ''));
+      if (fr[0] === 'shrah' && !fr[1]) { cur.mode = 'shr'; return true; }
+      if (fr[0]) { cur.f[fr[0]] = fr[1]; cur.last = fr[0]; cur.mode = 'f'; return true; }
+      if (cur.mode === 'shr') {
+        if (/[:：]$/.test(line)) cur.shr.push({ label: line.replace(/[:：]\s*$/, ''), text: '' });
+        else if (cur.shr.length) cur.shr[cur.shr.length - 1].text += ' ' + line;
+        return true;
+      }
+      if (cur.last) cur.f[cur.last] = (cur.f[cur.last] + '\n' + line).trim();
+      return true;
+    }
+
     blocks.forEach(function (b) {
       if (b.k === 't') { flush(); items.push({ k: 't', rows: b.rows }); return; }
       var full = b.runs.join('');
       var lines = full.split('\n');
       lines.forEach(function (raw) {
         var line = cleanWs(raw), runs = lines.length === 1 ? b.runs : [raw];
-        if (!line || SEP.test(line) || SECTION.test(line)) return;
+        if (!line) return;
+        if (SEP.test(line) || SECTION.test(line) || DONE_LINE.test(line)) { flush(); return; }
+        if (isMatchHead(line)) { flush(); cur = { match: true, items: [], f: {}, shr: [], mode: 'f', last: null }; return; }
         var m = Q_START.exec(line);
+        if (cur && cur.match && (MATCH_ITEM.test(line) || !m || fieldOf(line.replace(BULLET, ''))[0] || cur.mode === 'shr')) {
+          if (!(m && !MATCH_ITEM.test(line) && !fieldOf(line.replace(BULLET, ''))[0] && cur.mode !== 'shr')) { matchLine(line); return; }
+        }
         if (m && !fieldOf(line.replace(BULLET, ''))[0]) {
           flush();
           cur = { num: parseInt(m[1], 10), first: m[2].trim(), runs: stripPrefixRuns(runs, m[2]), extra: [], f: {}, last: null };
@@ -232,6 +265,19 @@
     });
     flush();
     return items;
+  }
+
+  // matching group -> one MCQ per item; the options are the group's answers (like a matching exercise)
+  function convertMatch(g) {
+    var answers = g.items.map(function (i) { return i.ans; });
+    return g.items.map(function (it) {
+      var sh = '';
+      g.shr.forEach(function (e) { if (!sh && sim(e.label, it.ans) >= 0.8) sh = cleanWs(e.text); });
+      var f = { shrah: sh, expl: g.f.expl, src: g.f.src, time: g.f.time, diff: g.f.diff };
+      var warn = answers.length > 5 ? ['أكثر من 5 إجابات في جدول المزاوجة — اقتُصرت الخيارات على أول 5'] : [];
+      return { kind: 'mcq', num: it.num, stem: it.stem, ans: it.ans, f: f, options: answers.slice(0, 5),
+        letters: LETTERS.slice(0, Math.min(5, answers.length)), warn: warn, conf: 'exact' };
+    });
   }
 
   function splitStem(full) {
@@ -395,6 +441,7 @@
     var items = collectGroups(blocks), qs = [];
     items.forEach(function (it) {
       if (it.k === 'q') qs.push(convertGroup(it.g));
+      else if (it.k === 'm') convertMatch(it.g).forEach(function (q) { qs.push(q); });
       else convertTable(it.rows).forEach(function (q) { qs.push(q); });
     });
     var res = buildResults(qs, category || 'امتحان غير محدد');

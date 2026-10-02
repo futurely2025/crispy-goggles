@@ -238,12 +238,27 @@ _OPT_LINE = re.compile(r'^\(?\s*(أ|ب|ج|د|هـ|ه)\s*[\)\-\.ـ]+\s*(.*)$')
 _TF_ANS = re.compile(r'^\(?\s*(صح|صحيحة|صحيح|خطأ|خطا|خاطئة|خاطئ)\s*\)?\s*\.?$')
 
 
-def _field_of(line):
+def _field_of(line, retry=False):
     for key, pat in _FIELDS:
         m = pat.match(line)
         if m:
             return key, line[m.end():].strip()
+    # حرف زائد قبل اسم الحقل (مثل «ص صعوبة السؤال: متوسط») خطأ إملائي نتسامح معه
+    if not retry and re.match(r'^[\u0621-\u064A]\s+\S', line):
+        key, rest = _field_of(re.sub(r'^[\u0621-\u064A]\s+', '', line), True)
+        if key:
+            return key, rest
     return None, line
+
+
+_MATCH_ITEM = re.compile(r'^[•\-\*\s]*س\s*(\d+)\s*[\)\-\.:：]?\s*(.+?)\s*(?:->|=>|—>|–>|←|⟵)\s*(.+)$')
+_DONE = re.compile(r'^(?:DONE|END|انتهى)$', re.I)
+
+
+def _is_match_head(line):
+    return (not re.match(r'^[•\-\*\s]*س\s*\d+\s*\)', line) and
+            bool(re.search(r'المزاوجة|التوصيل|المطابقة', line) or
+                 re.search(r'س\s*\d+\s*[-–]\s*س?\s*\d+', line)))
 
 
 def _new_group(num, first, runs):
@@ -252,14 +267,35 @@ def _new_group(num, first, runs):
 
 
 def _collect_groups(blocks):
-    """يرجع قائمة عناصر مرتبة: ('q', group) أو ('table', rows)."""
+    """يرجع قائمة عناصر مرتبة: ('q', group) أو ('match', group) أو ('table', rows)."""
     items, cur = [], None
 
     def flush():
         nonlocal cur
         if cur:
-            items.append(('q', cur))
+            items.append(('match' if cur.get('match') else 'q', cur))
             cur = None
+
+    def match_line(line):
+        m = _MATCH_ITEM.match(line)
+        if m:
+            cur['items'].append({'num': int(m.group(1)), 'stem': _clean_ws(m.group(2)),
+                                 'ans': _clean_ws(m.group(3)).rstrip('.').strip()})
+            cur['mode'], cur['last'] = 'f', None
+            return
+        key, rest = _field_of(_BULLET.sub('', line))
+        if key == 'shrah' and not rest:
+            cur['mode'] = 'shr'
+        elif key:
+            cur['fields'][key] = rest
+            cur['last'], cur['mode'] = key, 'f'
+        elif cur['mode'] == 'shr':
+            if re.search(r'[:：]\s*$', line):
+                cur['shr'].append({'label': re.sub(r'[:：]\s*$', '', line), 'text': ''})
+            elif cur['shr']:
+                cur['shr'][-1]['text'] += ' ' + line
+        elif cur['last']:
+            cur['fields'][cur['last']] += '\n' + line
 
     for kind, data in blocks:
         if kind == 't':
@@ -267,13 +303,25 @@ def _collect_groups(blocks):
             items.append(('table', data))
             continue
         full = ''.join(data)
-        for ln_i, raw in enumerate(full.split('\n')):
+        lines = full.split('\n')
+        for raw in lines:
             line = _clean_ws(raw)
-            runs = data if ('\n' not in full) else [raw]
-            if not line or _SEP.match(line) or _SECTION.match(line):
+            runs = data if len(lines) == 1 else [raw]
+            if not line:
+                continue
+            if _SEP.match(line) or _SECTION.match(line) or _DONE.match(line):
+                flush()
+                continue
+            if _is_match_head(line):
+                flush()
+                cur = {'match': True, 'items': [], 'fields': {}, 'shr': [], 'mode': 'f', 'last': None}
                 continue
             m = _Q_START.match(line)
-            if m and not _field_of(_BULLET.sub('', line))[0]:
+            has_field = bool(_field_of(_BULLET.sub('', line))[0])
+            if cur and cur.get('match') and (_MATCH_ITEM.match(line) or not m or has_field or cur['mode'] == 'shr'):
+                match_line(line)
+                continue
+            if m and not has_field:
                 flush()
                 cur = _new_group(int(m.group(1)), m.group(2).strip(), runs)
                 cur['runs'] = _strip_prefix_runs(runs, m.group(2))
@@ -292,6 +340,32 @@ def _collect_groups(blocks):
                 cur['fields'][cur['last']] = (cur['fields'][cur['last']] + '\n' + line).strip()
     flush()
     return items
+
+
+def _convert_match(g, meta):
+    answers = [i['ans'] for i in g['items']]
+    f = g['fields']
+    out = []
+    for it in g['items']:
+        sh = ''
+        for e in g['shr']:
+            if not sh and _sim(e['label'], it['ans']) >= 0.8:
+                sh = _clean_ws(e['text'])
+        block = [f"س{it['num']}) {it['stem']}"]
+        block += [f"({lt}) {tx}" for lt, tx in zip(LETTERS, answers[:5])]
+        block.append(f"الإجابة: {it['ans']}")
+        if sh:
+            block.append(f"الشرح: {sh}")
+        if f.get('expl'):
+            block.append("التوضيح: " + f['expl'].replace('\n', ' \n'))
+        if f.get('src'):
+            block.append(f"المصدر: {_clean_ws(f['src'])}")
+        block.append(f"الوقت المثالي لحل السؤال: {_fmt_time_diff(f.get('time', ''))}")
+        block.append(f"صعوبة السؤال: {_fmt_time_diff(f.get('diff', ''))}")
+        meta[it['num']] = {'kind': 'mcq', 'warn': (['أكثر من 5 إجابات في جدول المزاوجة — اقتُصرت الخيارات على أول 5']
+                                                  if len(answers) > 5 else [])}
+        out.append('\n'.join(block))
+    return out
 
 
 def _strip_prefix_runs(runs, rest):
@@ -457,6 +531,8 @@ def docx_to_canonical(path):
     for kind, data in items:
         if kind == 'q':
             parts.append(_convert_question(data, meta))
+        elif kind == 'match':
+            parts += _convert_match(data, meta)
         else:
             parts += _convert_table(data, meta)
     return '\n________________________________________\n'.join(parts), meta
