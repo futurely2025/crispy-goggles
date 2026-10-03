@@ -1,3 +1,3 @@
 @echo off
 chcp 65001 >nul
-powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "%~dp0installer\install.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -STA -File "%~dp0installer\install.ps1" -PkgRoot "%~dp0."

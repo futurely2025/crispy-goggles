@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>نموذج أسئلة السنوات</title>
+  <link rel="icon" href="../icons/icon-32.png">
+  <link rel="stylesheet" href="exam.css?v=1.10.0">
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="../vendor/jszip/jszip.min.js"></script>
+  <script src="exam-core.js?v=1.10.0"></script>
+  <script src="exam-lib.js?v=1.10.0"></script>
+  <script src="exam-tpl.js?v=1.10.0"></script>
+  <script src="exam-ui.js?v=1.10.0" defer></script>
+  <script src="exam-designer.js?v=1.10.0" defer></script>
+  <script src="exam-templates-ui.js?v=1.10.0" defer></script>
+</head>
+<body>
+<main>
+  <a class="backhome" href="../taskpane.html">‹ معادلات عربية</a>
+  <h1>نموذج أسئلة السنوات</h1>
+  <p class="lead">حوّل أسئلة السنوات السابقة إلى قالب «نموذج الأسئلة» الموحد، بملف Word وPDF بنفس التنسيق.</p>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab on" data-tab="make" type="button">إنشاء نموذج</button>
+    <button class="tab" data-tab="templates" type="button">القوالب</button>
+    <button class="tab" data-tab="dash" type="button">اللوحة</button>
+  </nav>
+
+  <p id="oldServer" class="warnbar" hidden>الخادم المحلي القديم ما زال يعمل، لذلك يُفتح القالب كنسخة بدل الملف الحقيقي. أعد تشغيل الجهاز (أو شغّل «تثبيت-الإضافة.cmd» من الحزمة الجديدة) ثم افتح Word.</p>
+
+  <div id="tab-make" class="pane">
+  <section class="card">
+    <h2><span class="n">1</span> مصدر الأسئلة</h2>
+    <label class="wide">نوع المادة <select id="subjectKind"><option value="">تلقائي (يُكتشف من الأسئلة)</option><option value="en">إنجليزي</option><option value="math">رياضيات</option><option value="other">تاريخ / مواد أخرى</option></select></label>
+    <div class="row">
+      <button id="readDoc" class="btn primary office-only" type="button">قراءة المستند المفتوح في Word</button>
+      <label class="btn" for="file">اختيار ملف Word أو نص… (أو عدة ملفات، أو اسحبها هنا)</label>
+      <input id="file" type="file" accept=".docx,.txt,.md,text/plain" multiple hidden>
+    </div>
+    <p class="hint" id="srcInfo">لم يتم اختيار مصدر بعد. الأسئلة بصيغة: <code>س1) …</code> والخيارات <code>(أ) …</code> والإجابة <code>الإجابة: …</code></p>
+    <details class="guide"><summary>أو الصق نص الأسئلة هنا</summary>
+      <textarea id="pasteBox" rows="6" placeholder="س1) …"></textarea>
+      <button id="pasteGo" class="btn sm" type="button">قراءة النص الملصوق</button>
+    </details>
+    <div id="preview" hidden>
+      <div class="chips" id="chips"></div>
+      <details id="warnBox" hidden><summary id="warnSum"></summary><ul id="warnList"></ul></details>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">2</span> بيانات الطالب <small>(تتغير لكل طالب)</small></h2>
+    <div class="grid">
+      <label class="wide">اسم الطالب <input id="studentName"></label>
+      <label>رقم الجلوس <input id="seat" dir="ltr"></label>
+      <label>رقم القيد <input id="regNo" dir="ltr"></label>
+      <label>المنطقة <input id="area"></label>
+      <label>اللجنة <input id="committee"></label>
+      <label class="wide">المدرسة <input id="school"></label>
+      <label>رمز الطباعة <input id="printCode" dir="ltr"></label>
+      <label>رمز الامتحان <input id="examCode" dir="ltr"></label>
+      <label>التسلسل <input id="serial" dir="ltr" placeholder="9/15"></label>
+    </div>
+    <label class="chk"><input type="checkbox" id="blankStudent"> ترك بيانات الطالب فارغة (للطباعة بدون اسم)</label>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">3</span> بيانات الورقة</h2>
+    <label class="wide">القالب المستخدم <select id="tplSelect"></select></label>
+    <p class="hint" id="tplUsed"></p>
+    <fieldset class="smart" id="smartBox">
+      <legend>إعداد ذكي للغلاف</legend>
+      <div class="grid">
+        <label>المرحلة <select id="sStage"><option value="secondary">الثانوية</option><option value="basic">الإعدادية (الأساسي)</option></select></label>
+        <label id="sBranchWrap">القسم <select id="sBranch"><option value="علمي">علمي</option><option value="أدبي">أدبي</option><option value="">بدون قسم</option></select></label>
+        <label>الدور <select id="sRound"><option value="first">الدور الأول</option><option value="second">الدور الثاني</option></select></label>
+        <label>المكان <select id="sPlace"><option value="in">داخل ليبيا</option><option value="out">خارج ليبيا</option></select></label>
+        <label class="sOut">المدينة <input id="sCity" placeholder="نوتنجهام"></label>
+        <label class="sOut">البلد <input id="sCountry" placeholder="بريطانيا"></label>
+      </div>
+      <p class="hint" id="sNote"></p>
+      <div class="row"><button id="sSave" class="btn sm" type="button">حفظ المكتوب كافتراضي لهذه المرحلة</button></div>
+    </fieldset>
+    <div class="grid">
+      <label>المادة <input id="subject" placeholder="التاريخ"></label>
+      <label>رمز المادة (اختياري) <input id="subjectCode" dir="ltr" placeholder="9508"></label>
+      <label>الدور <input id="round" placeholder="الدور الثاني"></label>
+      <label>العام الدراسي <input id="year" dir="ltr" placeholder="2016 - 2017"></label>
+      <label>القسم <input id="section" placeholder="القسم الأدبي"></label>
+      <label>الزمن <input id="duration" placeholder="ثلاث ساعات"></label>
+      <label class="wide">الشهادة <input id="certificate" placeholder="شهادة إتمام مرحلة التعليم الثانوي"></label>
+      <label>رقم ورقة الأسئلة (اختياري) <input id="paperNo" dir="ltr"></label>
+    </div>
+    <p class="hint">أي حقل تتركه فارغاً يأخذ قيمته الافتراضية من ملف القالب الأصلي (مكتوبة داخل الحقل بخط باهت).</p>
+    <div class="row"><button id="saveDef" class="btn" type="button">حفظ المكتوب كقيم افتراضية</button><button id="resetDef" class="btn" type="button">إعادة الافتراضي الأصلي</button></div>
+    <label class="chk"><input type="checkbox" id="renumber" checked> ترقيم الأسئلة من جديد بالتسلسل (س 1، س 2، …)</label>
+    <label class="chk"><input type="checkbox" id="showSolutions" checked> إظهار الحل والشرح والمصدر (في القوالب التي تدعم ذلك، مثل «القالب مع الحل والشرح»)</label>
+    <label class="chk"><input type="checkbox" id="includeKey"> إضافة صفحة «نموذج الإجابة» في نهاية الملف</label>
+    <label class="wide">اتجاه الأسئلة <select id="qdir"><option value="">تلقائي (الإنجليزي من اليسار لليمين)</option><option value="rtl">من اليمين لليسار</option><option value="ltr">من اليسار لليمين</option></select></label>
+    <label class="chk"><input type="checkbox" id="endMarker"> سطر «***** انتهت الأسئلة *****» في آخر الأسئلة</label>
+    <label class="wide">حروف الخيارات <select id="letters"><option value="">حسب المصدر</option><option value="ar">عربية (أ ب ج د)</option><option value="en">إنجليزية (A B C D)</option></select></label>
+    <label class="chk"><input type="checkbox" id="includeImages" checked> نقل صور الأسئلة من الملف المصدر ووضعها تحت أسئلتها</label>
+  </section>
+
+  <section class="card" id="designerCard">
+    <h2><span class="n">4</span> مصمم الحل والشرح <small>(تحكم كامل في ما يظهر)</small></h2>
+    <div id="dsPickBox" class="ds-pick"></div>
+    <div id="dsCustom" hidden>
+      <div class="ds-live">
+        <div id="dsTabs" class="ds-tabs" role="tablist" aria-label="نوع السؤال في المعاينة"></div>
+        <div id="dsInspect" class="ds-inspect"></div>
+        <div id="dsPreview" class="ds-preview" dir="rtl"></div>
+        <p class="hint">الحقول (اضغط لإظهار أو إخفاء):</p>
+        <div id="dsChips" class="ds-chips"></div>
+      </div>
+      <button id="dsAdv" type="button" class="btn sm ds-adv" aria-pressed="false">إعدادات مفصلة ▼</button>
+      <div id="dsBody" hidden></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="n">5</span> الإخراج</h2>
+    <div class="row">
+      <button id="makeWord" class="btn primary office-only" type="button" disabled>إنشاء النموذج في مستند Word جديد</button>
+      <button id="dlWord" class="btn" type="button" disabled>تنزيل ملف Word</button>
+    </div>
+    <div class="row office-only">
+      <button id="dlPdf" class="btn" type="button">حفظ PDF للمستند المفتوح</button>
+    </div>
+    <p class="hint office-only">لملف PDF مطابق تماماً: أنشئ النموذج في مستند جديد، ثم افتح هذه اللوحة داخل المستند الجديد واضغط «حفظ PDF» (يخرجه Word نفسه فيطابق التنسيق).</p>
+    <p class="hint standalone-only">لملف PDF مطابق للنموذج: اسحب ملف Word الناتج وأفلته على <code>docx-to-pdf.cmd</code> (يستخدم Word المثبّت عندك، فيطابق Word تماماً).</p>
+    <p class="status" id="status" role="status"></p>
+  </section>
+  </div>
+
+  <div id="tab-templates" class="pane" hidden>
+    <section class="card draft" id="draftCard" hidden>
+      <h2>أنت تعدّل القالب «<span id="draftName"></span>» في Word</h2>
+      <p class="hint">عدّل هذا المستند بكل أدوات Word (نصوص، خطوط، جداول، هوامش، صور…). لا تحذف السطر <code>{{BODY}}</code> ولا رموز الحقول <code>{{…}}</code>. وحين تنتهي اضغط:</p>
+      <div class="row">
+        <button id="draftSave" class="btn primary" type="button">حفظ التعديلات في القالب</button>
+        <button id="draftSaveAs" class="btn" type="button">حفظ كقالب جديد</button>
+      </div>
+      <p class="status" id="draftStatus" role="status"></p>
+    </section>
+
+    <section class="card" id="wizCard">
+      <h2>معالج قالب جديد</h2>
+      <p class="hint">اختر ما تريده في القالب (غلاف بسيط أو كامل، وحقول الحل)، ويُنشأ لك ملف Word جاهز تُكمل تعديله بحرية كاملة.</p>
+      <label class="wide">اسم القالب <input id="wizName" type="text" placeholder="مثال: قالب المادة والسنة فقط"></label>
+      <div class="row">
+        <label class="chk"><input type="radio" name="wizBase" value="solution" checked> <span>مع الحل (دائرة على الإجابة وتلوين الوصل)</span></label>
+        <label class="chk"><input type="radio" name="wizBase" value="plain"> <span>بدون حل (أسئلة فقط)</span></label>
+      </div>
+      <label class="chk"><input id="wizHeader" type="checkbox" checked> <span>ترويسة الوزارة وعنوان المادة</span></label>
+      <label class="chk"><input id="wizInstr" type="checkbox"> <span>إرشادات الامتحان وأشكال التظليل</span></label>
+      <p class="hint">بيانات الطالب التي تظهر في الغلاف (اتركها كلها فارغة لغلاف بلا بيانات طالب):</p>
+      <div class="row" id="wizRows"></div>
+      <div id="wizFieldsBox">
+        <p class="hint">ما يظهر تحت كل سؤال في القالب:</p>
+        <div class="row" id="wizFields"></div>
+      </div>
+      <div class="row">
+        <button id="wizMake" class="btn" type="button">إنشاء القالب</button>
+        <button id="wizMakeOpen" class="btn primary" type="button">إنشاء وفتحه في Word</button>
+      </div>
+      <p class="status" id="wizStatus" role="status"></p>
+    </section>
+
+    <section class="card" id="libCard">
+      <h2>مكتبة القوالب</h2>
+      <div class="row">
+        <label class="btn" for="tplFile">استيراد ملف Word كقالب…</label>
+        <input id="tplFile" type="file" accept=".docx" hidden>
+        <button id="tplAdopt" class="btn office-only" type="button">اعتماد المستند المفتوح كقالب</button>
+        <button id="tplReveal" class="btn" type="button" hidden>فتح مجلد القوالب</button>
+      </div>
+      <p class="hint" id="tplDir" hidden></p>
+      <div id="tplList" class="tpl-list"></div>
+      <details class="guide"><summary>دليل رموز القالب وكتل الأسئلة</summary>
+        <p class="hint">يمكنك تصميم شكل السؤال والحل داخل القالب نفسه في Word. أنشئ منطقة تبدأ بفقرة <code>[[DEFINITIONS]]</code> وتنتهي بـ <code>[[/DEFINITIONS]]</code> (لا تظهر في الناتج)، وبداخلها كتل: <code>[[BLOCK TF]]</code> صح/خطأ، <code>[[BLOCK MCQ]]</code> اختيار من متعدد، <code>[[BLOCK OPEN]]</code> أسئلة أخرى، <code>[[BLOCK HEADING]]</code> عناوين الأقسام، <code>[[BLOCK MATCH_KEY]]</code> حل الوصل، وكل كتلة تنتهي بـ <code>[[END]]</code>. وما بينها فقرات عادية تنسّقها كما تشاء، وتُكرَّر لكل سؤال.</p>
+        <table class="hist">
+          <tr><th>الرمز</th><th>المعنى</th></tr>
+          <tr><td><code>{{Q_NO}}</code> <code>{{Q_TEXT}}</code></td><td>رقم السؤال ونصه</td></tr>
+          <tr><td><code>{{OPT_LETTER}}</code> <code>{{OPT_TEXT}}</code></td><td>سطر الخيار (يتكرر لكل خيار؛ في صح/خطأ الخياران صح وخطأ)</td></tr>
+          <tr><td><code>{{OPT_OK_LETTER}}</code> <code>{{OPT_OK_TEXT}}</code></td><td>شكل الخيار الصحيح (مثلاً بدائرة خضراء)</td></tr>
+          <tr><td><code>{{OPT_BAD_LETTER}}</code> <code>{{OPT_BAD_TEXT}}</code></td><td>شكل الجواب «خطأ» حين يكون هو الصحيح (مثلاً بالأحمر)</td></tr>
+          <tr><td><code>{{ANSWER}}</code> <code>{{ANSWER_TEXT}}</code> <code>{{ANSWER_FULL}}</code></td><td>الإجابة: الحرف، نص الإجابة، الحرف مع النص</td></tr>
+          <tr><td><code>{{CORRECTION}}</code> <code>{{EXPLANATION}}</code> <code>{{CLARIFICATION}}</code></td><td>تصحيح الخطأ، الشرح، التوضيح</td></tr>
+          <tr><td><code>{{SOURCE}}</code> <code>{{TIME}}</code> <code>{{DIFFICULTY}}</code> <code>{{NOTE}}</code></td><td>المصدر، الوقت المثالي، الصعوبة، ملاحظة</td></tr>
+          <tr><td><code>{{QTYPE}}</code> <code>{{TITLE}}</code> <code>{{MATCH_KEY}}</code></td><td>نوع السؤال، عنوان القسم (في كتلة HEADING)، حل الوصل (في MATCH_KEY)</td></tr>
+          <tr><td><code>{{SUBJECT}}</code> <code>{{STUDENT_NAME}}</code> …</td><td>بيانات الغلاف تعمل داخل الكتل أيضاً</td></tr>
+        </table>
+        <p class="hint">الفقرة التي كل حقولها الاختيارية (الشرح، المصدر…) فارغة تُحذف تلقائياً. اضغط «تعديل في Word» على «القالب مع الحل والشرح» لترى مثالاً كاملاً وتبني عليه قالبك.</p>
+      </details>
+      <p class="hint">«القالب الأصلي» ثابت ولا يُعدَّل؛ اضغط «تعديل في Word» لإنشاء قالب خاص بك منه. القوالب تُحفظ على هذا الجهاز فقط.</p>
+      <p class="status" id="tplStatus" role="status"></p>
+    </section>
+
+    <section class="card" id="editor" hidden>
+      <h2>محرر القالب: <input id="edName" class="inline" aria-label="اسم القالب"></h2>
+      <div class="row">
+        <button id="edSave" class="btn primary" type="button">حفظ</button>
+        <button id="edSaveAs" class="btn" type="button">حفظ كقالب جديد</button>
+        <button id="edTry" class="btn" type="button">تجربة</button>
+        <button id="edClose" class="btn" type="button">إغلاق</button>
+      </div>
+      <div class="row">
+        <input id="edFilter" type="search" placeholder="بحث في نصوص القالب…" class="grow">
+        <label class="chk inl"><input type="checkbox" id="edEmpty"> الأسطر الفارغة</label>
+      </div>
+      <p class="hint" id="edInfo"></p>
+      <div id="edRows"></div>
+      <p class="hint">كل سطر يظهر كما هو في القالب. غيّر النص أو الحجم أو الخط أو المسافات ثم «حفظ». الحقول <code>{{…}}</code> تُملأ تلقائياً ولا تحذفها. <code>⇥</code> تعني مسافة جدولة (Tab).</p>
+      <p class="status" id="edStatus" role="status"></p>
+    </section>
+  </div>
+
+  <div id="tab-dash" class="pane" hidden>
+    <section class="card">
+      <h2>نظرة عامة</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+    <section class="card">
+      <h2>آخر النماذج المُنشأة</h2>
+      <div id="histBox"></div>
+      <div class="row"><button id="histClear" class="btn" type="button">مسح السجل</button></div>
+    </section>
+    <section class="card">
+      <h2>تشخيص</h2>
+      <p class="hint">إن لم يظهر تعديل القالب في النموذج فاضغط «تشخيص» وأرسل لي النص الظاهر.</p>
+      <div class="row"><button id="diagBtn" class="btn" type="button">تشخيص</button></div>
+      <pre id="diagOut" class="diag" hidden></pre>
+    </section>
+    <section class="card">
+      <h2>نسخة احتياطية</h2>
+      <p class="hint">احفظ كل قوالبك وقيمك الافتراضية في ملف واحد، واستعدها على أي جهاز.</p>
+      <div class="row">
+        <button id="bkExport" class="btn" type="button">تصدير نسخة احتياطية</button>
+        <label class="btn" for="bkFile">استعادة من نسخة…</label>
+        <input id="bkFile" type="file" accept=".json" hidden>
+      </div>
+      <p class="status" id="bkStatus" role="status"></p>
+    </section>
+  </div>
+</main>
+</body>
+</html>

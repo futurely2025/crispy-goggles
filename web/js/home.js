@@ -32,7 +32,7 @@
   function busy(on, text) {
     $('busy').hidden = !on;
     $('busyText').textContent = text || T('working');
-    ['mathBtn', 'chemBtn', 'editBtn', 'convertBtn', 'allTexBtn', 'refreshBtn'].forEach(function (id) { $(id).disabled = !!on; });
+    ['mathBtn', 'chemBtn', 'examBtn', 'editBtn', 'convertBtn', 'allTexBtn', 'refreshBtn'].forEach(function (id) { $(id).disabled = !!on; });
     Array.prototype.forEach.call(document.querySelectorAll('.tile'), function (b) { b.disabled = !!on; });
   }
   function errMsg(e) { return (e && (e.message || e.code)) ? (e.message || e.code) : String(e); }
@@ -377,6 +377,8 @@
     };
   });
   $('chemBtn').onclick = function () { openEditor('chem', null); };
+  // the exam-paper builder is part of the same add-in; its page has a back link to this one
+  $('examBtn').onclick = function () { location.href = baseUrl() + 'exam/index.html'; };
   // the PDF studio is a full-page tool: it opens in the browser (it does not insert into Word)
   $('pdfTile').onclick = function () {
     var u = baseUrl() + 'pdf.html';

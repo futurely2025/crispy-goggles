@@ -5,11 +5,11 @@
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
   <Id>e9182039-0176-4a6e-a259-145b24db2436</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.1.0.0</Version>
   <ProviderName>Arabic Math</ProviderName>
   <DefaultLocale>ar-SA</DefaultLocale>
   <DisplayName DefaultValue="معادلات عربية"/>
-  <Description DefaultValue="كتابة المعادلات الرياضية العربية بصيغة LaTeX: من اليمين لليسار، جا جتا طا، أرقام عربية وهندية، مع إمكانية التحرير لاحقاً."/>
+  <Description DefaultValue="معادلات رياضية وكيميائية عربية من اليمين لليسار، ومعها نموذج أسئلة السنوات (محلل الأسئلة): يرتّب الأسئلة في قالب موحد Word وPDF."/>
   <IconUrl DefaultValue="https://wazni.ly/icons/icon-32.png"/>
   <HighResolutionIconUrl DefaultValue="https://wazni.ly/icons/icon-64.png"/>
   <SupportUrl DefaultValue="https://wazni.ly/taskpane.html"/>
@@ -63,6 +63,22 @@
                     <SourceLocation resid="Taskpane.Url"/>
                   </Action>
                 </Control>
+                <Control xsi:type="Button" id="ArabicMath.OpenExam">
+                  <Label resid="ExamButton.Label"/>
+                  <Supertip>
+                    <Title resid="ExamButton.Label"/>
+                    <Description resid="ExamButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ArabicMathExamPane</TaskpaneId>
+                    <SourceLocation resid="ExamPane.Url"/>
+                  </Action>
+                </Control>
               </Group>
               <Label resid="Tab.Label"/>
             </CustomTab>
@@ -79,6 +95,7 @@
       <bt:Urls>
         <bt:Url id="Commands.Url" DefaultValue="https://wazni.ly/commands.html"/>
         <bt:Url id="Taskpane.Url" DefaultValue="https://wazni.ly/taskpane.html"/>
+        <bt:Url id="ExamPane.Url" DefaultValue="https://wazni.ly/exam/index.html"/>
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://wazni.ly/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
@@ -86,9 +103,11 @@
         <bt:String id="Tab.Label" DefaultValue="معادلات عربية"/>
         <bt:String id="Group.Label" DefaultValue="المعادلات"/>
         <bt:String id="Button.Label" DefaultValue="محرر المعادلات"/>
+        <bt:String id="ExamButton.Label" DefaultValue="نموذج الأسئلة"/>
       </bt:ShortStrings>
       <bt:LongStrings>
-        <bt:String id="GetStarted.Description" DefaultValue="افتح تبويب (معادلات عربية) ثم اضغط (محرر المعادلات)."/>
+        <bt:String id="GetStarted.Description" DefaultValue="افتح تبويب (معادلات عربية) ثم اضغط (محرر المعادلات) أو (نموذج الأسئلة)."/>
+        <bt:String id="ExamButton.Tooltip" DefaultValue="محلل الأسئلة: ترتيب أسئلة السنوات في قالب النموذج الموحد وتصديرها Word وPDF."/>
         <bt:String id="Button.Tooltip" DefaultValue="إدراج أو تحرير معادلة رياضية عربية (LaTeX) من اليمين لليسار."/>
       </bt:LongStrings>
     </Resources>
