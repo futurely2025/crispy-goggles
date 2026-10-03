@@ -138,6 +138,23 @@
     }).catch(function (e) { running = false; P.busy(false); P.toast('تعذّر التعرف على المعادلة: ' + (e && e.message ? e.message : e), true); if (window.ArLog) ArLog.error('mathocr', e); });
   }
 
+
+  /** Arabic (mirrored) equations: no reader is available for them, so the editor opens with the original picture beside it and the Arabic style on */
+  function runMathRef(i, r) {
+    if (r.w < 14 || r.h < 10) return P.toast('ارسم مستطيلاً أكبر حول المعادلة');
+    var sc = Math.min(4, Math.max(2, 1400 / Math.max(40, r.w)));
+    P.pageBitmap(i, sc).then(function (cv) {
+      var img = crop(cv, r, sc); cv.width = cv.height = 1;
+      var t = document.createElement('canvas'), k = Math.min(1, 700 / img.width, 140 / img.height); t.width = Math.max(1, Math.round(img.width * k)); t.height = Math.max(1, Math.round(img.height * k)); t.getContext('2d').drawImage(img, 0, 0, t.width, t.height);
+      P.openModal('editor', { mode: 'math', tex: '', ref: t.toDataURL('image/png'), warn: 'اكتب المعادلة بالأعلى مستعيناً بالأصل ثم اضغط إدراج', opts: { rtl: true, arabicFunctions: true, arabicComma: true } }, function (msg) {
+        if (msg.type !== 'insert') return;
+        P.push();
+        if (window.PdfAnnot && PdfAnnot.coverRegion) PdfAnnot.coverRegion(i, r);
+        P.insertFromEditor(msg, i).then(function () { var o = P.selObjs()[0]; if (!o) return; o.x = r.x; o.y = r.y + Math.max(0, (r.h - (o.h || 0)) / 2); P.drawOverlay(i); P.changed(); });
+      });
+    });
+  }
+
   /** the captured equation opens straight in the equation editor (live preview, original picture beside it); «إدراج» places it on the page */
   function openMathEditor(i, r, res, thumb) {
     var conf = Math.round(res.conf * 100);
@@ -208,7 +225,7 @@
     });
   }
 
-  window.PdfOcr = { run: run, runPage: runPage, runAll: runAll, runMath: runMath, config: cfg };
+  window.PdfOcr = { run: run, runPage: runPage, runAll: runAll, runMath: runMath, runMathRef: runMathRef, config: cfg };
   // ribbon entry points (buttons are in pdf.html)
   function hook() {
     var b1 = document.getElementById('ocrPageBtn'), b2 = document.getElementById('ocrAllBtn');
