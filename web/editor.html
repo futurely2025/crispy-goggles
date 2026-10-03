@@ -21,6 +21,7 @@
   <script src="js/studio/raster.js?v=5.4.0"></script>
   <script src="js/figures/util.js?v=5.0.0"></script>
   <script src="js/figures/registry.js?v=5.0.0"></script>
+  <style>.refbox{margin:8px 0;padding:8px 10px;border:1px solid #cfe3e1;background:#f4fbfa;border-radius:12px}.refhd{display:flex;gap:10px;align-items:center;font-size:12.5px;margin-bottom:6px}.refhd span{flex:1;color:#5b7077}.refhd span.bad{color:#b3261e;font-weight:700}.refhd button{border:0;background:none;cursor:pointer;font-size:15px}.refbox img{max-width:100%;max-height:120px;display:block;margin:auto;background:#fff;border-radius:8px;border:1px solid #e1e8ea}</style>
 </head>
 <body class="editor-page">
   <div class="loader" id="loader">
@@ -94,6 +95,9 @@
         </div>
       </div>
     </div>
+
+    <!-- reference picture (equation captured from a PDF / scan) -->
+    <div class="refbox" id="refBox" hidden><div class="refhd"><b>المعادلة الأصلية في الملف</b><span id="refWarn"></span><button type="button" id="refX" title="إخفاء">✕</button></div><img id="refImg" alt=""></div>
 
     <!-- editing area -->
     <section class="work">

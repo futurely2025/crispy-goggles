@@ -134,9 +134,25 @@
     }).then(function (res) {
       running = false; P.busy(false);
       if (!res.latex) { P.toast('لم أجد معادلة في المنطقة المحددة — تأكد أنها مطبوعة وواضحة', true); return; }
-      showMath(i, r, res, thumb);
+      openMathEditor(i, r, res, thumb);
     }).catch(function (e) { running = false; P.busy(false); P.toast('تعذّر التعرف على المعادلة: ' + (e && e.message ? e.message : e), true); if (window.ArLog) ArLog.error('mathocr', e); });
   }
+
+  /** the captured equation opens straight in the equation editor (live preview, original picture beside it); «إدراج» places it on the page */
+  function openMathEditor(i, r, res, thumb) {
+    var conf = Math.round(res.conf * 100);
+    var warn = res.suspicious ? 'قراءة غير مؤكدة (ثقة ' + conf + '%) — راجع الصيغة وصحّحها قبل الإدراج' : 'ثقة القراءة ' + conf + '% — راجع الصيغة ثم اضغط إدراج';
+    P.openModal('editor', { mode: 'math', tex: res.latex, ref: thumb, warn: warn, bad: !!res.suspicious, opts: { rtl: false, arabicFunctions: false, arabicComma: false, digits: 'western' } }, function (msg) {
+      if (msg.type !== 'insert') return;
+      P.push();
+      if (window.PdfAnnot && PdfAnnot.coverRegion) PdfAnnot.coverRegion(i, r);          // the printed original is covered by the editable equation
+      P.insertFromEditor(msg, i).then(function () {
+        var o = P.selObjs()[0]; if (!o) return;
+        o.x = r.x; o.y = r.y + Math.max(0, (r.h - (o.h || 0)) / 2); P.drawOverlay(i); P.changed();
+      });
+    });
+  }
+
   function showMath(i, r, res, thumb) {
     var conf = Math.round(res.conf * 100), tone = conf >= 95 ? '#1f8a4c' : conf >= 85 ? '#b8860b' : '#c2352b';
     UI.open({

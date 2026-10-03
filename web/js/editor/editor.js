@@ -14,6 +14,15 @@
   var init = parseHash();
   var host = init.host || (new URLSearchParams(location.search).get('host')) || (window.parent !== window ? 'frame' : 'web');
 
+  // an equation captured from a PDF / scan: show the original next to the editor so it can be compared while editing
+  (function () {
+    if (!init.ref) return;
+    var box = document.getElementById('refBox'); if (!box) return;
+    document.getElementById('refImg').src = init.ref; box.hidden = false;
+    var w = document.getElementById('refWarn'); if (w) { w.textContent = init.warn || ''; if (init.bad) w.className = 'bad'; }
+    var x = document.getElementById('refX'); if (x) x.onclick = function () { box.hidden = true; };
+  })();
+
   var saved = Settings.load();
   I18N.setLang(saved.lang);
   RenderHost.lang = saved.lang;
