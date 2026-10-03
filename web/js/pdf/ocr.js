@@ -143,6 +143,7 @@
       title: 'المعادلة المستخرجة', wide: true, ok: 'فتح في محرر المعادلات وإدراجها',
       body: '<div class="ocr-src"><img src="' + thumb + '" alt="المعادلة الأصلية"></div>' +
         '<p class="dlg-note ocr-stat"><b style="color:' + tone + '">ثقة النموذج ' + conf + '%</b> · ' + (res.ms / 1000).toFixed(1) + ' ث — ' + (conf < 90 ? 'راجع الصيغة بعناية وصحّحها في المحرر قبل الإدراج.' : 'سيفتح المحرر بالصيغة لمراجعتها وتعديلها.') + '</p>' +
+        (res.suspicious ? '<p class="dlg-note" style="background:#fdecea;border-color:#f5b7b1;color:#8c2a20">⚠ غالباً هذه الصيغة <b>غير صحيحة</b>: النموذج يتعرّف على معادلة واحدة بسيطة مطبوعة. إن كانت الصورة معادلة طويلة أو من عدة أسطر أو فيها رموز متجهات/تفاضل معقدة، حدّد <b>سطراً واحداً أو جزءاً أصغر</b> وأعد المحاولة، أو اكتبها يدوياً في المحرر.</p>' : '') +
         '<textarea id="mathT" rows="4" dir="ltr" spellcheck="false" style="font:15px/1.6 Consolas,monospace">' + esc(res.latex) + '</textarea>' +
         '<label class="chk"><input type="checkbox" id="mathCover"> تغطية المعادلة الأصلية بلون الخلفية عند الإدراج</label>',
       extra: '<button type="button" class="btn" id="mathCopy">⧉ نسخ LaTeX</button>',

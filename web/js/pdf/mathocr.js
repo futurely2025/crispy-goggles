@@ -125,10 +125,30 @@
     } while (news !== prev);
     return news;
   }
-  /** pix2tex marks array environments that MathLive does not need: unwrap a single-cell array */
+  /** make the model's LaTeX acceptable to MathLive (the equation editor): old font switches, \stackrel, text-size commands … */
   function tidy(s) {
     s = s.replace(/\\begin\{array\}\s*\{[^}]*\}\s*\{?\s*\{?\s*(.*?)\s*\}?\s*\}?\s*\\end\{array\}/g, function (m, inner) { return inner.indexOf('&') < 0 && inner.indexOf('\\\\') < 0 ? inner : m; });
-    return s.replace(/\\(longrightarrow)(?=\s*[^\\])/g, '\\to').replace(/\s+/g, ' ').trim();
+    // font switches  {\cal X} {\bf X} {\it X} {\rm X} {\mathsf ...}
+    s = s.replace(/\{\s*\\(cal|mathcal)\s+([^{}]*)\}/g, '\\mathcal{$2}').replace(/\{\s*\\bf\s+([^{}]*)\}/g, '\\mathbf{$1}').replace(/\{\s*\\it\s+([^{}]*)\}/g, '$1').replace(/\{\s*\\rm\s+([^{}]*)\}/g, '\\mathrm{$1}').replace(/\{\s*\\mathsf\s*\{([^{}]*)\}\s*\}/g, '\\mathsf{$1}');
+    s = s.replace(/\\(textbf)\s*\{/g, '\\mathbf{').replace(/\\(textrm|textnormal)\s*\{/g, '\\text{').replace(/\\boldsymbol\s*\{\s*\\imath\s*\}/g, 'i');
+    s = s.replace(/\\(scriptsize|tiny|small|footnotesize|normalsize|large|Large|LARGE|huge|Huge|bigl|bigr|Bigl|Bigr|biggl|biggr|Biggl|Biggr|big|Big|bigg|Bigg|vphantom\{[^}]*\}|phantom\{[^}]*\}|nonumber|label\{[^}]*\})(?![a-zA-Z])/g, '');
+    s = s.replace(/\\stackrel\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, '\\overset{$1}{$2}').replace(/\\stackrel/g, '\\overset');
+    s = s.replace(/\\operatorname\*\s*\{lim\}/g, '\\lim').replace(/\\operatorname\*/g, '\\operatorname').replace(/\\(longrightarrow)(?=\s*[^\\])/g, '\\to');
+    s = s.replace(/\\(mathrm|mathbf|mathcal|mathbb|mathfrak|mathsf|mathtt)\s*\{\s*\}/g, '').replace(/\{\s*\}/g, '');
+    // collapse needlessly doubled braces: {{x}} → {x} (MathLive keeps them as empty groups)
+    for (var k = 0; k < 4; k++) s = s.replace(/\{\{([^{}]*)\}\}/g, '{$1}');
+    return balance(s.replace(/\s+/g, ' ').trim());
+  }
+  function balance(s) {
+    var depth = 0, out = '', i, c;
+    for (i = 0; i < s.length; i++) { c = s[i]; if (c === '\\') { out += c + (s[i + 1] || ''); i++; continue; } if (c === '{') depth++; else if (c === '}') { if (depth === 0) continue; depth--; } out += c; }
+    while (depth-- > 0) out += '}';
+    return out;
+  }
+  /** a reading that is probably invented: very low model confidence, many exotic commands, a blown-up array … */
+  function suspicious(latex, conf) {
+    var cmds = (latex.match(/\\[a-zA-Z]+/g) || []), exotic = cmds.filter(function (c) { return /^\\(overset|stackrel|underline|overline|underbrace|overbrace|mathfrak|mathcal|bigotimes|bigoplus|bigcup|bigcap|wedge|vee|propto|asymp|simeq|cong|equiv|lor|land|neg|setminus|hookrightarrow|longleftarrow|Longrightarrow|Longleftrightarrow|phantom|slash|not)$/.test(c); }).length;
+    return conf < 0.8 || exotic >= 4 || /\\begin\{array\}/.test(latex) && conf < 0.93 || latex.length > 260 && conf < 0.95;
   }
 
   /** opts: {onStatus, scales:[1, .85, 1.18]} — with several scales the most confident reading wins */
@@ -146,7 +166,7 @@
       return chain.then(function () {
         if (!best) return { latex: '', conf: 0, ms: Date.now() - t0 };
         var raw = detok(best.toks), latex = tidy(post(raw));
-        return { latex: latex, raw: raw, conf: best.conf, ms: Date.now() - t0 };
+        return { latex: latex, raw: raw, conf: best.conf, ms: Date.now() - t0, suspicious: suspicious(latex, best.conf) };
       });
     });
   }
