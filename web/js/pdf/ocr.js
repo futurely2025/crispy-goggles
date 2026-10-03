@@ -5,13 +5,13 @@
 (function () {
   'use strict';
   var P = window.__pdf, S = P.S, UI = window.PdfUI, esc = UI.esc, E = window.PdfOcrEngine;
-  var KEY = 'armath.pdf.ocr';
-  var cfg = { mode: 'accurate', lang: 'auto', digits: 'keep' };
+  var KEY = 'armath.pdf.ocr2';
+  var cfg = { mode: 'fast', lang: 'auto', digits: 'keep' };
   try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* ignore */ }
   function saveCfg() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* ignore */ } }
   var running = false;
 
-  var MODE_NAMES = { fast: 'سريع', accurate: 'دقيق (موصى به)', max: 'أقصى دقة (أبطأ)' };
+  var MODE_NAMES = { fast: 'سريع (الافتراضي)', accurate: 'دقيق', max: 'أقصى دقة (أبطأ)' };
   function sel(id, items, val) { return '<select id="' + id + '">' + items.map(function (it) { return '<option value="' + it[0] + '"' + (it[0] === val ? ' selected' : '') + '>' + it[1] + '</option>'; }).join('') + '</select>'; }
 
   function status(msg) { P.busy(true, msg); }

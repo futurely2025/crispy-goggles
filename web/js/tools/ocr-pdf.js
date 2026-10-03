@@ -4,7 +4,7 @@
   'use strict';
   var h = T.h, main = T.shell('ocr-pdf'), doc = null, images = null;
   var zone = T.dropzone({ accept: '.pdf,application/pdf,image/*', multiple: true, label: 'اختر ملف PDF ممسوحاً ضوئياً (أو صوراً)', hint: 'أو اسحب الملف وأفلته هنا', test: function (f) { return T.isPdf(f) || T.isImage(f); }, onFiles: function (fs) { open(fs); } });
-  var mode = T.select([['fast', 'سريع'], ['accurate', 'دقيق (موصى به)'], ['max', 'أقصى دقة (أبطأ)']], 'accurate');
+  var mode = T.select([['fast', 'سريع (الافتراضي)'], ['accurate', 'دقيق'], ['max', 'أقصى دقة (أبطأ)']], 'fast');
   var lang = T.select([['auto', 'تلقائي'], ['ara', 'عربي'], ['ara+eng', 'عربي + إنجليزي'], ['eng', 'إنجليزي']], 'auto');
   var how = T.segmented([['keep', 'إبقاء الصفحات كما هي'], ['clean', 'تنظيف المسح وتصحيح الميل']], 'clean');
   var digs = T.select([['keep', 'كما هي'], ['western', '0 1 2 3'], ['indic', '٠ ١ ٢ ٣']], 'keep');
