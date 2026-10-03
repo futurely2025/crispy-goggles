@@ -116,6 +116,49 @@
     });
   }
 
+
+  // ================================================================ printed equation → LaTeX → editable equation
+  function runMath(i, r) {
+    if (running) return P.toast('عملية تعرّف جارية — انتظر انتهاءها');
+    if (r.w < 14 || r.h < 10) return P.toast('ارسم مستطيلاً أكبر حول المعادلة');
+    if (!window.PdfMathOcr) return P.toast('وحدة المعادلات غير محمّلة', true);
+    running = true; status('تحضير الصورة…');
+    var sc = Math.min(4, Math.max(2, 1400 / Math.max(40, r.w))), thumb = null;
+    PdfMathOcr.available().then(function (ok) {
+      if (!ok) throw new Error('ملفات نموذج المعادلات غير مرفوعة على الموقع (المجلد vendor/mathocr)');
+      return P.pageBitmap(i, sc);
+    }).then(function (cv) {
+      var img = crop(cv, r, sc); cv.width = cv.height = 1;
+      var t = document.createElement('canvas'), k = Math.min(1, 700 / img.width, 140 / img.height); t.width = Math.max(1, Math.round(img.width * k)); t.height = Math.max(1, Math.round(img.height * k)); t.getContext('2d').drawImage(img, 0, 0, t.width, t.height); thumb = t.toDataURL('image/png');
+      return PdfMathOcr.recognize(img, { scales: [1, 0.8, 1.25], onStatus: status });
+    }).then(function (res) {
+      running = false; P.busy(false);
+      if (!res.latex) { P.toast('لم أجد معادلة في المنطقة المحددة — تأكد أنها مطبوعة وواضحة', true); return; }
+      showMath(i, r, res, thumb);
+    }).catch(function (e) { running = false; P.busy(false); P.toast('تعذّر التعرف على المعادلة: ' + (e && e.message ? e.message : e), true); if (window.ArLog) ArLog.error('mathocr', e); });
+  }
+  function showMath(i, r, res, thumb) {
+    var conf = Math.round(res.conf * 100), tone = conf >= 95 ? '#1f8a4c' : conf >= 85 ? '#b8860b' : '#c2352b';
+    UI.open({
+      title: 'المعادلة المستخرجة', wide: true, ok: 'فتح في محرر المعادلات وإدراجها',
+      body: '<div class="ocr-src"><img src="' + thumb + '" alt="المعادلة الأصلية"></div>' +
+        '<p class="dlg-note ocr-stat"><b style="color:' + tone + '">ثقة النموذج ' + conf + '%</b> · ' + (res.ms / 1000).toFixed(1) + ' ث — ' + (conf < 90 ? 'راجع الصيغة بعناية وصحّحها في المحرر قبل الإدراج.' : 'سيفتح المحرر بالصيغة لمراجعتها وتعديلها.') + '</p>' +
+        '<textarea id="mathT" rows="4" dir="ltr" spellcheck="false" style="font:15px/1.6 Consolas,monospace">' + esc(res.latex) + '</textarea>' +
+        '<label class="chk"><input type="checkbox" id="mathCover"> تغطية المعادلة الأصلية بلون الخلفية عند الإدراج</label>',
+      extra: '<button type="button" class="btn" id="mathCopy">⧉ نسخ LaTeX</button>',
+      onOpen: function (el) { el.parentNode.querySelector('#mathCopy').onclick = function () { var t = el.querySelector('#mathT'); t.select(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ } if (!ok && navigator.clipboard) navigator.clipboard.writeText(t.value); P.toast('نُسخت الصيغة'); }; }
+    }).then(function (el) {
+      if (!el) return;
+      var tex = el.querySelector('#mathT').value.trim(); if (!tex) return;
+      var cover = el.querySelector('#mathCover').checked;
+      P.openModal('editor', { mode: 'math', tex: tex }, function (msg) {
+        if (msg.type !== 'insert') return;
+        if (cover && window.PdfAnnot && PdfAnnot.coverRegion) { P.push(); PdfAnnot.coverRegion(i, r); }
+        P.insertFromEditor(msg, i);
+      });
+    });
+  }
+
   // ================================================================ every page → one text
   function runAll() {
     if (!S.pdf) return P.toast('افتح ملف PDF أولاً');
@@ -148,7 +191,7 @@
     });
   }
 
-  window.PdfOcr = { run: run, runPage: runPage, runAll: runAll, config: cfg };
+  window.PdfOcr = { run: run, runPage: runPage, runAll: runAll, runMath: runMath, config: cfg };
   // ribbon entry points (buttons are in pdf.html)
   function hook() {
     var b1 = document.getElementById('ocrPageBtn'), b2 = document.getElementById('ocrAllBtn');

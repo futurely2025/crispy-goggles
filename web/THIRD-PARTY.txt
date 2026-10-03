@@ -18,3 +18,5 @@ Tesseract.js 5 + tesseract.js-core 6 (OCR in the browser, vendor/tesseract) - Ap
 tessdata_best float models ara / eng (vendor/tesseract/lang-best, used by the "accurate" OCR modes) - Apache License 2.0 - https://github.com/tesseract-ocr/tessdata_best
 Arabic word list for OCR spell repair (vendor/tesseract/ardict.txt.gz): words with frequency >= 25 from FrequencyWords (OpenSubtitles 2018, hermitdave) - CC BY-SA 4.0 - https://github.com/hermitdave/FrequencyWords ; plus a school vocabulary list written for this project
 OCR digit reader (vendor/tesseract/digits.json): a small neural network trained for this project on synthetic renderings of digits in SIL OFL / Apache / GPL-with-font-exception fonts (no third-party model data)
+pix2tex / LaTeX-OCR (equation picture to LaTeX; model weights exported to ONNX, vendor/mathocr) - MIT License - https://github.com/lukas-blecher/LaTeX-OCR
+onnxruntime-web 1.30 (runs the equation model in the browser, vendor/onnxruntime) - MIT License - https://github.com/microsoft/onnxruntime

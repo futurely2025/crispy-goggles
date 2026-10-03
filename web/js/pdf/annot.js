@@ -19,7 +19,7 @@
   function deco() { S.deco = S.deco || {}; return S.deco; }
 
   // ================================================================ object rendering
-  var REGION = { ocr: 1, edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1, fsig: 1 };
+  var REGION = { ocr: 1, mathocr: 1, edittext: 1, redact: 1, link: 1, ftext: 1, fcheck: 1, fradio: 1, fcombo: 1, flist: 1, fbtn: 1, fsig: 1 };
   var FIELD_LABEL = { text: 'حقل نص', check: 'مربع اختيار', radio: 'زر خيار', combo: 'قائمة منسدلة', list: 'قائمة', button: 'زر', sig: 'حقل توقيع' };
   var FIELD_ICON = { text: 'Aa', check: '☑', radio: '◉', combo: '▾', list: '☰', button: '▭', sig: '✍' };
   function inner(o, data, exporting) {
@@ -74,6 +74,7 @@
     var p = S.pages[i], click = r.w < 5 && r.h < 5;
     var o;
     if (tool === 'ocr') { if (window.PdfOcr) PdfOcr.run(i, r); return; }
+    if (tool === 'mathocr') { if (window.PdfOcr) PdfOcr.runMath(i, r); return; }
     if (tool === 'edittext') { editTextRegion(i, r); return; }
     if (tool === 'redact') { if (click) return; o = { id: P.uid(), t: 'redact', x: r.x, y: r.y, w: r.w, h: r.h, fc: '#000000', label: '' }; }
     else if (tool === 'link') { if (click) { r = { x: r.x - 60, y: r.y - 8, w: 120, h: 18 }; } o = { id: P.uid(), t: 'link', x: r.x, y: r.y, w: Math.max(12, r.w), h: Math.max(10, r.h), kind: 'url', url: '', pid: p.id }; }
